@@ -33,7 +33,11 @@ public class mangaLookUpLine implements Runnable{
 			{
 				if(line.contains(accept)){
 					String[] tokensVal = line.split("\"");
-					url=tokensVal[5];
+					if(tokensVal.length>5){
+						url=tokensVal[5];
+					}else{
+						url=tokensVal[1];
+					}
 					System.out.println(url);
 					hasUpdate=true;
 					hasExclude=true;
@@ -48,7 +52,8 @@ public class mangaLookUpLine implements Runnable{
 			}
 			reader.close();
 		}catch(Exception e){
-			System.out.println("Error accsessing"+url);
+			System.out.println("Error accsessing:\n"+url);
+			e.printStackTrace();
 		}
 	}
 }
