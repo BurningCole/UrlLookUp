@@ -49,10 +49,14 @@ public class mangaLookUpLine implements Runnable{
 			}
 			if(!hasExclude){
 				System.out.println(url+" missing exclude...");
+				url="Error: "+url+" missing exclude...";
+				hasUpdate=true;
 			}
 			reader.close();
 		}catch(Exception e){
 			System.out.println("Error accsessing:\n"+url);
+			url="Error: "+url+" website connection error...";
+			hasUpdate=true;
 			e.printStackTrace();
 		}
 	}
