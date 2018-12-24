@@ -3,7 +3,9 @@ import java.io.*;
 
 public class mangaLookUpLine implements Runnable{
 	private String url;
+	private String urlMem="";
 	private String accept;
+	private String prevUrl="";
 	private String exclude;
 	private boolean hasUpdate=false;
 	
@@ -39,11 +41,17 @@ public class mangaLookUpLine implements Runnable{
 						url=tokensVal[1];
 					}
 					System.out.println(url);
+						urlMem=urlMem+url+"\r\n";
+					if(url!=prevUrl){
+						prevUrl=url;
+						run();
+					}
 					hasUpdate=true;
 					hasExclude=true;
 					break;
 				}else if(line.contains(exclude)){
 					hasExclude=true;
+					url=urlMem;
 					break;
 				}
 			}
