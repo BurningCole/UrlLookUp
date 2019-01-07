@@ -11,6 +11,7 @@ public class mangaLookUpLine implements Runnable{
 	
 	public mangaLookUpLine(String Url,String Accept,String Exclude){
 		url=Url;
+		prevUrl=url;
 		accept=Accept;
 		exclude=Exclude;
 	}
@@ -40,13 +41,13 @@ public class mangaLookUpLine implements Runnable{
 					}else{
 						url=tokensVal[1];
 					}
-					System.out.println(url);
-						urlMem=urlMem+url+"\r\n";
-					if(url!=prevUrl){
+					System.out.println("from:\t"+prevUrl+"\nto:\t"+url);
+					urlMem=urlMem+url+"\r\n";
+					if(!url.equals(prevUrl)){
 						prevUrl=url;
 						run();
+						hasUpdate=true;
 					}
-					hasUpdate=true;
 					hasExclude=true;
 					break;
 				}else if(line.contains(exclude)){
