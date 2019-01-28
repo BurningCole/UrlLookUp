@@ -7,6 +7,7 @@ public class mangaLookUpLine implements Runnable{
 	private String accept;
 	private String prevUrl="";
 	private String exclude;
+	private int attempts=0;
 	private boolean hasUpdate=false;
 	
 	public mangaLookUpLine(String Url,String Accept,String Exclude){
@@ -32,6 +33,7 @@ public class mangaLookUpLine implements Runnable{
 			BufferedReader reader = new BufferedReader(new InputStreamReader(con.getInputStream()));
 			String line;
 			boolean hasExclude=false;
+			attempts=0;
 			while ((line = reader.readLine()) != null)
 			{
 				if(line.contains(accept)){
@@ -63,6 +65,10 @@ public class mangaLookUpLine implements Runnable{
 			}
 			reader.close();
 		}catch(Exception e){
+			if(attempts<5){
+				attempts++;
+				run();
+			}
 			System.out.println("Error accsessing:\n"+url);
 			url="Error: "+url+" website connection error...";
 			hasUpdate=true;

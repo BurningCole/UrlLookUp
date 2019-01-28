@@ -22,7 +22,7 @@ public class mangaLookUp{
 			Thread[] lookups = new Thread[maxThreads];
 			mangaLookUpLine[] Line=new mangaLookUpLine[maxThreads];
 			for(String line; (line = br.readLine()) != null; read++){
-				Line[read]=new mangaLookUpLine(line,accept,exclude);
+				Line[read]=new mangaLookUpLine(line.split(">")[1],accept,exclude);
 				lookups[read]=new Thread(Line[read]);
 				lookups[read].start();
 			}
