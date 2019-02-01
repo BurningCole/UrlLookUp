@@ -68,6 +68,7 @@ public class mangaLookUpLine implements Runnable{
 			if(attempts<5){
 				attempts++;
 				run();
+				return;
 			}
 			System.out.println("Error accsessing:\n"+url);
 			url="Error: "+url+" website connection error...";

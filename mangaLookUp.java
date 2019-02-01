@@ -14,30 +14,52 @@ public class mangaLookUp{
 	}
 	
 	public void startScan(String outputFile){
-		int maxThreads=999;
+		int maxThreads=64;
 		try(
 			BufferedReader br = new BufferedReader(new FileReader(fileName))){
 			BufferedWriter text = new BufferedWriter(new FileWriter(outputFile));
-			int read=0;
+			int read=0,i=0;
 			Thread[] lookups = new Thread[maxThreads];
 			mangaLookUpLine[] Line=new mangaLookUpLine[maxThreads];
+			String[] names = new String[maxThreads];
 			for(String line; (line = br.readLine()) != null; read++){
-				Line[read]=new mangaLookUpLine(line.split(">")[1],accept,exclude);
-				lookups[read]=new Thread(Line[read]);
-				lookups[read].start();
+				if(read>=maxThreads){
+					if(lookups[read%maxThreads].isAlive()){
+						try{
+							lookups[i%maxThreads].join();
+						}catch(InterruptedException e){
+							System.out.println("Thread joining error");
+						}
+						System.out.println("read "+(i+1)+" Lines");
+					}
+					if(Line[i%maxThreads].result()){
+						text.write("Manga Line: "+(i+1)+" ("+names[i%maxThreads]+")");
+						text.newLine();
+						text.write(Line[i%maxThreads].getUrl());
+						text.newLine();
+					}
+					i++;
+				}
+				String[] lineSplit=line.split(">");
+				names[read%maxThreads]=lineSplit[0];
+				Line[read%maxThreads]=new mangaLookUpLine(lineSplit[1],accept,exclude);
+				lookups[read%maxThreads]=new Thread(Line[read%maxThreads]);
+				lookups[read%maxThreads].start();
 			}
 			br.close();
-			for(int i=0;i<read;i++){
-				if(lookups[i].isAlive()){
+			for(;i<read;i++){
+				if(lookups[i%maxThreads].isAlive()){
 					try{
-						lookups[i].join();
-					}catch(InterruptedException e){}
+						lookups[i%maxThreads].join();
+					}catch(InterruptedException e){
+						System.out.println("Thread joining error");
+					}
 					System.out.println("read "+(i+1)+" Lines");
 				}
-				if(Line[i].result()){
-					text.write("Manga Line: "+(i+1));
+				if(Line[i%maxThreads].result()){
+					text.write("Manga Line: "+(i+1)+" ("+names[i%maxThreads]+")");
 					text.newLine();
-					text.write(Line[i].getUrl());
+					text.write(Line[i%maxThreads].getUrl());
 					text.newLine();
 				}
 			}
