@@ -24,6 +24,12 @@ public class mangaLookUp{
 			String[] names = new String[maxThreads];
 			for(String line; (line = br.readLine()) != null; read++){
 				if(read>=maxThreads){
+					if(lookups[read%maxThreads]==null){
+						System.out.println("Line: "+(read+1)+" not a correct format");
+						text.write("Manga Line: "+(read+1)+" not a correct format");
+						text.newLine();
+						text.newLine();
+					}else{
 					if(lookups[read%maxThreads].isAlive()){
 						try{
 							lookups[i%maxThreads].join();
@@ -37,11 +43,14 @@ public class mangaLookUp{
 						text.newLine();
 						text.write(Line[i%maxThreads].getUrl());
 						text.newLine();
-					}
+					}}
 					i++;
 				}
 				String[] lineSplit=line.split(">");
 				names[read%maxThreads]=lineSplit[0];
+				if(lineSplit.length!=2){
+					continue;
+				}
 				Line[read%maxThreads]=new mangaLookUpLine(lineSplit[1],accept,exclude);
 				lookups[read%maxThreads]=new Thread(Line[read%maxThreads]);
 				lookups[read%maxThreads].start();

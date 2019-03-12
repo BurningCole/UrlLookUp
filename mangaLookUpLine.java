@@ -60,7 +60,7 @@ public class mangaLookUpLine implements Runnable{
 			}
 			if(!hasExclude){
 				System.out.println(url+" missing exclude...");
-				url="Error: "+url+" missing exclude...";
+				url="Error: "+url+" missing exclude...\n";
 				hasUpdate=true;
 			}
 			reader.close();
@@ -71,7 +71,7 @@ public class mangaLookUpLine implements Runnable{
 				return;
 			}
 			System.out.println("Error accsessing:\n"+url);
-			url="Error: "+url+" website connection error...";
+			url="Error: "+url+" website connection error...\n";
 			hasUpdate=true;
 			e.printStackTrace();
 		}
