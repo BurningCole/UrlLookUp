@@ -97,21 +97,8 @@ public class mangaLookUp{
 						text.newLine();
 						text.newLine();
 				}else{
-				if(lookups[i%maxThreads].isAlive()){
-					try{
-						lookups[i%maxThreads].join();
-					}catch(InterruptedException e){
-						System.out.println("Thread joining error");
-					}
-					System.out.println("read "+(i+1)+" Lines");
-				}
-				if(Line[i%maxThreads].result()){
-					text.write("Manga Line: "+(i+1)+" ("+names[i%maxThreads]+")");
-					text.newLine();
-					text.write(Line[i%maxThreads].getUrl());
-					text.newLine();
-				}}
-				for(int j=0;j<maxThreads;j++){
+				while(lookups[i%maxThreads].isAlive()){
+					for(int j=0;j<maxThreads;j++){
 					if(lookups[j%maxThreads]==null||!lookups[j%maxThreads].isAlive())
 						if(current.charAt(j%maxThreads+1)=='#'){
 							total.setCharAt(finished--,'=');
@@ -126,6 +113,15 @@ public class mangaLookUp{
 				}
 				text1.setText(current.toString());
 				text2.setText(total.toString());
+				try {Thread.sleep(10);}
+				catch(Exception e){}
+				}
+				if(Line[i%maxThreads].result()){
+					text.write("Manga Line: "+(i+1)+" ("+names[i%maxThreads]+")");
+					text.newLine();
+					text.write(Line[i%maxThreads].getUrl());
+					text.newLine();
+				}}
 			}
 			text.close();
 			if (Desktop.isDesktopSupported()){
