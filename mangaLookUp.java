@@ -1,11 +1,13 @@
 import java.net.*;
 import java.io.*;
 import java.awt.Desktop;
+import javax.swing.*;
 
 public class mangaLookUp{
 	private String fileName;
 	private String accept;
 	private String exclude;
+	private JLabel text1,text2;
 	
 	public mangaLookUp(String FileName, String Accept, String Exclude){
 		fileName=FileName;
@@ -15,6 +17,23 @@ public class mangaLookUp{
 	
 	public void startScan(String outputFile){
 		int maxThreads=64;
+		StringBuilder current=new StringBuilder("[");
+		for(int i=0;i<maxThreads;i++)
+			current.append("=");
+		current.append("]");
+		int finished=0;
+		StringBuilder total=new StringBuilder(current);
+		text1=new JLabel(current.toString());
+		text2=new JLabel(total.toString());
+		JFrame frame= new JFrame("Output");
+		frame.setSize(maxThreads*7+16,70);
+		frame.setResizable(false);
+		frame.getContentPane().add(text1);
+		frame.getContentPane().add(text2);
+		frame.setLayout(null);
+		frame.setVisible(true);
+		text1.setBounds(0,0,maxThreads*7+16,20);
+		text2.setBounds(0,20,maxThreads*7+16,20);
 		try(
 			BufferedReader br = new BufferedReader(new FileReader(fileName))){
 			BufferedWriter text = new BufferedWriter(new FileWriter(outputFile));
@@ -54,9 +73,30 @@ public class mangaLookUp{
 				Line[read%maxThreads]=new mangaLookUpLine(lineSplit[1],accept,exclude);
 				lookups[read%maxThreads]=new Thread(Line[read%maxThreads]);
 				lookups[read%maxThreads].start();
+				for(int j=0;j<maxThreads;j++){
+					if(lookups[j%maxThreads]==null||!lookups[j%maxThreads].isAlive())
+						if(current.charAt(j%maxThreads+1)=='#'){
+							total.setCharAt(finished--,'=');
+							current.setCharAt(j%maxThreads+1,'=');
+						}
+					else{
+						if(current.charAt(j%maxThreads+1)=='='){
+							total.setCharAt(++finished,'#');
+							current.setCharAt(j%maxThreads+1,'#');
+						}
+					}
+				}
+				text1.setText(current.toString());
+				text2.setText(total.toString());
 			}
 			br.close();
 			for(;i<read;i++){
+				if(lookups[read%maxThreads]==null){
+						System.out.println("Line: "+(read+1)+" not a correct format");
+						text.write("Manga Line: "+(read+1)+" not a correct format");
+						text.newLine();
+						text.newLine();
+				}else{
 				if(lookups[i%maxThreads].isAlive()){
 					try{
 						lookups[i%maxThreads].join();
@@ -70,7 +110,22 @@ public class mangaLookUp{
 					text.newLine();
 					text.write(Line[i%maxThreads].getUrl());
 					text.newLine();
+				}}
+				for(int j=0;j<maxThreads;j++){
+					if(lookups[j%maxThreads]==null||!lookups[j%maxThreads].isAlive())
+						if(current.charAt(j%maxThreads+1)=='#'){
+							total.setCharAt(finished--,'=');
+							current.setCharAt(j%maxThreads+1,'=');
+						}
+					else{
+						if(current.charAt(j%maxThreads+1)=='='){
+							total.setCharAt(++finished,'#');
+							current.setCharAt(j%maxThreads+1,'#');
+						}
+					}
 				}
+				text1.setText(current.toString());
+				text2.setText(total.toString());
 			}
 			text.close();
 			if (Desktop.isDesktopSupported()){
@@ -82,6 +137,7 @@ public class mangaLookUp{
 			System.out.println("\nCouldn't access file");
 		}
 		System.out.println("\n---DONE---");
+		frame.dispose();
 	}
 	
 	public boolean testUrlFor(String url,String string,String exclude)throws Exception{
