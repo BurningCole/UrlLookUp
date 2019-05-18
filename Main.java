@@ -5,7 +5,7 @@ public class Main{
 		Class<?> c = UrlLookUp.class;
 		//remove unnesasary parts of string that are returned
 		String fileLoc=c.getProtectionDomain().getCodeSource().getLocation().toString().replace("file:","");
-		fileLoc=fileLoc.replace("mangaLookUp.jar","");
+		fileLoc=fileLoc.replace("UrlLookUp.jar","");
 		//add data folder to location
 		fileLoc=fileLoc+"data/";
 		System.out.println(fileLoc);

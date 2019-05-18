@@ -1,3 +1,3 @@
 javac *.java
-jar cfe mangaLookUp.jar Main *.class
+jar cfm UrlLookUp.jar Manifest.txt *.class
 pause
