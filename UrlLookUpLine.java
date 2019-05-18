@@ -2,7 +2,7 @@ import java.net.*;
 import java.io.*;
 import java.util.ArrayList;
 
-public class mangaLookUpLine implements Runnable{
+public class UrlLookUpLine implements Runnable{
 	private String url;
 	private ArrayList<String> urlMem=new ArrayList<String>();
 	private String accept;
@@ -17,7 +17,7 @@ public class mangaLookUpLine implements Runnable{
 	* (Accept) the string that marks link to connected webpage and
 	* (Exclude)the string that will always be on webpage after acceptance string
 	*/
-	public mangaLookUpLine(String Url,String Accept,String Exclude){
+	public UrlLookUpLine(String Url,String Accept,String Exclude){
 		url=Url;
 		prevUrl=url;
 		accept=Accept;

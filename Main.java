@@ -10,7 +10,7 @@ public class Main{
 		System.out.println(fileLoc);
 		
 		//create lookup
-		IUpdateChecker lookup=new mangaLookUp(fileLoc+"MangaUrls.txt","=\"back","=\"clearfix");
+		IUpdateChecker lookup=new UrlLookUp(fileLoc+"Urls.txt","=\"back","=\"clearfix");
 		//start scan
 		lookup.startScan(fileLoc+"updates.txt");
 	}

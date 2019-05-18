@@ -4,8 +4,9 @@ import java.awt.Desktop;
 import javax.swing.*;
 import java.util.ArrayList;
 
-public class mangaLookUp implements IUpdateChecker{
+public class UrlLookUp implements IUpdateChecker{
 	private String fileName;
+	private boolean isDB;
 	private String accept;
 	private String exclude;
 	private JLabel text1,text2;
@@ -13,25 +14,34 @@ public class mangaLookUp implements IUpdateChecker{
 	//create arrays
 	private int maxThreads=64;
 	private Thread[] lookups = new Thread[maxThreads];
-	private mangaLookUpLine[] Line=new mangaLookUpLine[maxThreads];
+	private UrlLookUpLine[] Line=new UrlLookUpLine[maxThreads];
 	private String[] names = new String[maxThreads];
 	
 	private StringBuilder current;
 	private StringBuilder total;
 	private int finished=0;
 	
+	BufferedWriter sqlfile;
+	
 	/**
 	* FileName: name of file that contains urls
 	* Accept: what string marks link
 	* Exclude: what string marks end of area to check (speeds it up a little)
 	*/
-	public mangaLookUp(String FileName, String Accept, String Exclude){
+	public UrlLookUp(String FileName, String Accept, String Exclude){
 		fileName=FileName;
 		accept=Accept;
 		exclude=Exclude;
+		isDB=false;
 	}
+	/*public UrlLookUp(DbBasic DataBaseConn){
+		fileName=FileName;
+		accept=Accept;
+		exclude=Exclude;
+		isDB=true;
+	}*/
 	
-	private void waitForResult(Thread thread, mangaLookUpLine line, String name, int id,BufferedWriter output){
+	private void waitForResult(Thread thread, UrlLookUpLine line, String name, int id,BufferedWriter output){
 		while(thread.isAlive()){
 			try{
 				thread.join(1000);
@@ -52,8 +62,12 @@ public class mangaLookUp implements IUpdateChecker{
 				for (String url:urls){
 					output.write("\t"+url);
 					output.newLine();
+					
 				}
 				output.newLine();
+				
+				sqlfile.write("UPDATE urls SET url='"+line.getUrl()+"' WHERE id = "+id+";");
+				sqlfile.newLine();
 			//if error
 			}else if(result==-1){
 				output.write("Error on line: "+id+" ("+name+")");
@@ -61,6 +75,9 @@ public class mangaLookUp implements IUpdateChecker{
 				output.write(line.getUrl());
 				output.newLine();
 				output.newLine();
+				
+				sqlfile.write("--UPDATE urls SET url='#Change this#' WHERE id = "+id+";");
+				sqlfile.newLine();
 			}
 		}catch(IOException e){
 			e.printStackTrace();
@@ -72,7 +89,6 @@ public class mangaLookUp implements IUpdateChecker{
 	* outputFile: what file to put results in
 	*/
 	public void startScan(String outputFile){
-		
 		//create editable string for loading bars
 		current=new StringBuilder("[");
 		for(int i=0;i<maxThreads;i++)
@@ -98,6 +114,7 @@ public class mangaLookUp implements IUpdateChecker{
 			BufferedReader br = new BufferedReader(new FileReader(fileName))){
 			//get output file
 			BufferedWriter text = new BufferedWriter(new FileWriter(outputFile));
+			sqlfile=new BufferedWriter(new FileWriter(outputFile.replace(".txt",".sql")));
 			int read=0,i=0;
 		
 			
@@ -114,36 +131,6 @@ public class mangaLookUp implements IUpdateChecker{
 						text.newLine();
 					}else{
 						waitForResult(lookups[read%maxThreads],Line[i%maxThreads],names[i%maxThreads],i+1,text);
-						/*//if thread is still active wait for it to finish
-						while(lookups[read%maxThreads].isAlive()){
-							try{
-								lookups[i%maxThreads].join(1000);
-								GUIUpdate();
-							}catch(InterruptedException e){
-								System.out.println("Thread joining error");
-							}
-							System.out.println("read "+(i+1)+" Lines");
-						}
-						//get result
-						int result=Line[i%maxThreads].result();
-						//if success
-						if(result==1){
-							text.write("Manga Line: "+(i+1)+" ("+names[i%maxThreads]+")");
-							text.newLine();
-							ArrayList<String> urls = Line[i%maxThreads].getAllUrls();
-							for (String url:urls){
-								text.write("\t"+url);
-								text.newLine();
-							}
-							text.newLine();
-						//if error
-						}else if(result==-1){
-							text.write("Error on line: "+(i+1)+" ("+names[i%maxThreads]+")");
-							text.newLine();
-							text.write(Line[i%maxThreads].getUrl())
-							text.newLine();
-							text.newLine();
-						}*/
 					}
 					i++;
 				}
@@ -154,7 +141,7 @@ public class mangaLookUp implements IUpdateChecker{
 					continue;
 				}
 				//create lookup for line
-				Line[read%maxThreads]=new mangaLookUpLine(lineSplit[1],accept,exclude);
+				Line[read%maxThreads]=new UrlLookUpLine(lineSplit[1],accept,exclude);
 				lookups[read%maxThreads]=new Thread(Line[read%maxThreads]);
 				//start lookup
 				lookups[read%maxThreads].start();
@@ -172,36 +159,11 @@ public class mangaLookUp implements IUpdateChecker{
 						text.newLine();
 				}else{
 					waitForResult(lookups[read%maxThreads],Line[i%maxThreads],names[i%maxThreads],i+1,text);
-					/*while(lookups[i%maxThreads].isAlive()){
-						
-						
-						for(int j=0;j<maxThreads;j++){
-						if(lookups[j%maxThreads]==null||!lookups[j%maxThreads].isAlive())
-							if(current.charAt(j%maxThreads+1)=='#'){
-								total.setCharAt(finished--,'=');
-								current.setCharAt(j%maxThreads+1,'=');
-							}
-						else{
-							if(current.charAt(j%maxThreads+1)=='='){
-								total.setCharAt(++finished,'#');
-								current.setCharAt(j%maxThreads+1,'#');
-							}
-						}
-					}
-					text1.setText(current.toString());
-					text2.setText(total.toString());
-					try {Thread.sleep(10);}
-					catch(Exception e){}
-					}
-					if(Line[i%maxThreads].result()){
-						text.write("Manga Line: "+(i+1)+" ("+names[i%maxThreads]+")");
-						text.newLine();
-						text.write(Line[i%maxThreads].getUrl());
-						text.newLine();
-					}*/
 				}
 			}
 			text.close();
+			sqlfile.close();
+			
 			if (Desktop.isDesktopSupported()){
 				Desktop.getDesktop().edit(new File(outputFile));
 			}
