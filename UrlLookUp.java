@@ -3,6 +3,7 @@ import java.io.*;
 import java.awt.Desktop;
 import javax.swing.*;
 import java.util.ArrayList;
+import java.sql.*;
 
 public class UrlLookUp implements IUpdateChecker{
 	private String fileName;
@@ -10,6 +11,7 @@ public class UrlLookUp implements IUpdateChecker{
 	private String accept;
 	private String exclude;
 	private JLabel text1,text2;
+	private DbBasic db;
 	
 	//create arrays
 	private int maxThreads=64;
@@ -34,31 +36,34 @@ public class UrlLookUp implements IUpdateChecker{
 		exclude=Exclude;
 		isDB=false;
 	}
-	/*public UrlLookUp(DbBasic DataBaseConn){
-		fileName=FileName;
-		accept=Accept;
-		exclude=Exclude;
+	public UrlLookUp(DbBasic DataBaseConn){
+		db=DataBaseConn;
+		accept="=\"back";
+		exclude="=\"clearfix";
 		isDB=true;
-	}*/
+	}
 	
-	private void waitForResult(Thread thread, UrlLookUpLine line, String name, int id,BufferedWriter output){
-		while(thread.isAlive()){
+	private void waitForResult(int id,BufferedWriter output){
+		boolean waited=false;
+		while(lookups[(id-1)%maxThreads].isAlive()){
 			try{
-				thread.join(1000);
+				waited=true;
+				lookups[(id-1)%maxThreads].join(1000);
 				GUIUpdate();
 			}catch(InterruptedException e){
 				System.out.println("Thread joining error");
 			}
 		}
+		if(waited)
 		System.out.println("read "+id+" Lines");
 		//get result
-		int result=line.result();
+		int result=Line[(id-1)%maxThreads].result();
 		//if success
 		try{
 			if(result==1){
-				output.write("Manga Line: "+id+" ("+name+")");
+				output.write("Manga Line: "+id+" ("+names[(id-1)%maxThreads]+")");
 				output.newLine();
-				ArrayList<String> urls = line.getAllUrls();
+				ArrayList<String> urls = Line[(id-1)%maxThreads].getAllUrls();
 				for (String url:urls){
 					output.write("\t"+url);
 					output.newLine();
@@ -66,13 +71,29 @@ public class UrlLookUp implements IUpdateChecker{
 				}
 				output.newLine();
 				
-				sqlfile.write("UPDATE urls SET url='"+line.getUrl()+"' WHERE id = "+id+";");
+				String newUrl=Line[(id-1)%maxThreads].getUrl();
+				ResultSet rs=db.doQuery("SELECT url FROM websites");
+				try{
+				while(rs.next()){
+					System.out.println(newUrl+":"+rs.getString("url"));
+					if(newUrl.startsWith(rs.getString("url"))){
+					System.out.println("Match");
+						newUrl=newUrl.substring(
+							rs.getString("url").length()
+						);
+						break;
+					}
+				}
+				sqlfile.write("UPDATE urls SET url='"+newUrl+"' WHERE id = "+id+";");
 				sqlfile.newLine();
+				}catch(SQLException e){
+					e.printStackTrace();
+				}
 			//if error
 			}else if(result==-1){
-				output.write("Error on line: "+id+" ("+name+")");
+				output.write("Error on line: "+id+" ("+names[(id-1)%maxThreads]+")");
 				output.newLine();
-				output.write(line.getUrl());
+				output.write(Line[(id-1)%maxThreads].getUrl());
 				output.newLine();
 				output.newLine();
 				
@@ -110,15 +131,54 @@ public class UrlLookUp implements IUpdateChecker{
 		text2.setBounds(0,20,maxThreads*7+16,20);
 		
 		//start reading file
-		try(
-			BufferedReader br = new BufferedReader(new FileReader(fileName))){
+		try{
 			//get output file
+			BufferedReader br=null;
+			ResultSet rs=null;
+			if(isDB){
+				rs=db.doQuery("SELECT urls.id, websites.url, urls.url, urls.alias FROM urls INNER JOIN websites ON urls.webId=websites.webId");
+			}else{
+				br = new BufferedReader(new FileReader(fileName));
+			}
 			BufferedWriter text = new BufferedWriter(new FileWriter(outputFile));
 			sqlfile=new BufferedWriter(new FileWriter(outputFile.replace(".txt",".sql")));
 			int read=0,i=0;
 		
 			
 			//iterate through each line
+			if(isDB){
+				try{
+				read--;
+				while(rs.next()){
+					read++;
+					if(read>=maxThreads){
+						//if no lookup in space
+						if(lookups[read%maxThreads]==null){
+							System.out.println("Line: "+(read+1)+" not a correct format");
+							text.write("Manga Line: "+(read+1)+" not a correct format");
+							text.newLine();
+							text.newLine();
+						}else{
+							waitForResult(i+1,text);
+						}
+						i++;
+					}
+					//get next url
+					names[read%maxThreads]=rs.getString(4);
+					String url=rs.getString(2)+rs.getString(3);
+					//create lookup for line
+					Line[read%maxThreads]=new UrlLookUpLine(url,accept,exclude);
+					lookups[read%maxThreads]=new Thread(Line[read%maxThreads]);
+					//start lookup
+					lookups[read%maxThreads].start();
+					//update swing gui
+					GUIUpdate();
+				}
+				}catch(SQLException e){
+					e.printStackTrace();
+					return;
+				}
+			}else
 			for(String line; (line = br.readLine()) != null; read++){
 				
 				//if thread array capacity reached
@@ -130,7 +190,7 @@ public class UrlLookUp implements IUpdateChecker{
 						text.newLine();
 						text.newLine();
 					}else{
-						waitForResult(lookups[read%maxThreads],Line[i%maxThreads],names[i%maxThreads],i+1,text);
+						waitForResult(i+1,text);
 					}
 					i++;
 				}
@@ -150,7 +210,8 @@ public class UrlLookUp implements IUpdateChecker{
 				GUIUpdate();
 			}
 			//close input file
-			br.close();
+			if(!isDB)
+				br.close();
 			for(;i<read;i++){
 				if(lookups[read%maxThreads]==null){
 						System.out.println("Line: "+(read+1)+" not a correct format");
@@ -158,7 +219,7 @@ public class UrlLookUp implements IUpdateChecker{
 						text.newLine();
 						text.newLine();
 				}else{
-					waitForResult(lookups[read%maxThreads],Line[i%maxThreads],names[i%maxThreads],i+1,text);
+					waitForResult(i+1,text);
 				}
 			}
 			text.close();

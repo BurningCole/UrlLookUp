@@ -108,7 +108,7 @@ public class UrlLookUpLine implements Runnable{
 					urlMem.add(url);
 					//if url has changed
 					if(!url.equals(prevUrl)){
-						System.out.println("from:\t"+prevUrl+"\nto:\t"+url);//print out result
+						//System.out.println("from:\t"+prevUrl+"\nto:\t"+url);//print out result
 						prevUrl=url;
 						//try running it again to get aditional linked urls	
 						//(maybe change from recursive to stop any stack overflow?)
