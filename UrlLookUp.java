@@ -136,7 +136,7 @@ public class UrlLookUp implements IUpdateChecker{
 			BufferedReader br=null;
 			ResultSet rs=null;
 			if(isDB){
-				rs=db.doQuery("SELECT urls.id, websites.url, urls.url, urls.alias FROM urls INNER JOIN websites ON urls.webId=websites.webId");
+				rs=db.doQuery("SELECT urls.id, websites.url, urls.url, urls.alias, websites.accept, websites.exclude FROM urls INNER JOIN websites ON urls.webId=websites.webId");
 			}else{
 				br = new BufferedReader(new FileReader(fileName));
 			}
@@ -167,7 +167,7 @@ public class UrlLookUp implements IUpdateChecker{
 					names[read%maxThreads]=rs.getString(4);
 					String url=rs.getString(2)+rs.getString(3);
 					//create lookup for line
-					Line[read%maxThreads]=new UrlLookUpLine(url,accept,exclude);
+					Line[read%maxThreads]=new UrlLookUpLine(url,rs.getString(5),rs.getString(6));
 					lookups[read%maxThreads]=new Thread(Line[read%maxThreads]);
 					//start lookup
 					lookups[read%maxThreads].start();
