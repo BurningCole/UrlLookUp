@@ -1,7 +1,7 @@
 public class Main{
 	public static void main(String[] args)throws Exception{
 		//find update file
-		Class<?> c = mangaLookUp.class;
+		Class<?> c = UrlLookUp.class;
 		//remove unnesasary parts of string that are returned
 		String fileLoc=c.getProtectionDomain().getCodeSource().getLocation().toString().replace("file:","");
 		fileLoc=fileLoc.replace("mangaLookUp.jar","");

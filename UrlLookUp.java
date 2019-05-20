@@ -56,7 +56,7 @@ public class UrlLookUp implements IUpdateChecker{
 		//if success
 		try{
 			if(result==1){
-				output.write("Manga Line: "+id+" ("+name+")");
+				output.write("Url Line: "+id+" ("+name+")");
 				output.newLine();
 				ArrayList<String> urls = line.getAllUrls();
 				for (String url:urls){
@@ -126,7 +126,7 @@ public class UrlLookUp implements IUpdateChecker{
 					//if no lookup in space
 					if(lookups[read%maxThreads]==null){
 						System.out.println("Line: "+(read+1)+" not a correct format");
-						text.write("Manga Line: "+(read+1)+" not a correct format");
+						text.write("Url Line: "+(read+1)+" not a correct format");
 						text.newLine();
 						text.newLine();
 					}else{
@@ -154,7 +154,7 @@ public class UrlLookUp implements IUpdateChecker{
 			for(;i<read;i++){
 				if(lookups[read%maxThreads]==null){
 						System.out.println("Line: "+(read+1)+" not a correct format");
-						text.write("Manga Line: "+(read+1)+" not a correct format");
+						text.write("Url Line: "+(read+1)+" not a correct format");
 						text.newLine();
 						text.newLine();
 				}else{
