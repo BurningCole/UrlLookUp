@@ -96,6 +96,7 @@ public class UrlLookUpLine implements Runnable{
 			//iterate through http file lines
 			while ((line = reader.readLine()) != null)
 			{
+				//System.out.println(line);
 				//if line has accept value
 				if(line.contains(accept)){
 					String tmpUrl=getLinkURL(line);
