@@ -68,7 +68,12 @@ public class UrlLookUpLine implements Runnable{
 				String[] tokensVal = link.split("\"");
 				//search for http links
 				for(String token:tokensVal)
-					if(token.contains("http")){
+					if(token.startsWith("http")||token.startsWith("www.")){
+						return token;
+					}
+				tokensVal = link.split("'");
+				for(String token:tokensVal)
+					if(token.startsWith("http")||token.startsWith("www.")){
 						return token;
 					}
 			}
