@@ -61,7 +61,8 @@ public class UrlLookUp implements IUpdateChecker{
 		int result=Line[id%maxThreads].result();
 		//if success
 		try{
-			if(result==1){
+			switch(result){
+			case 0:
 				output.write("Manga Line: "+actualIDs[id%maxThreads]+" ("+names[id%maxThreads]+")");
 				output.newLine();
 				ArrayList<String> urls = Line[id%maxThreads].getAllUrls();
@@ -90,9 +91,10 @@ public class UrlLookUp implements IUpdateChecker{
 				}catch(SQLException e){
 					e.printStackTrace();
 				}
+				break;
 			//if error
-			}else if(result==-1){
-				output.write("Error on ID: "+actualIDs[id%maxThreads]+" ("+names[id%maxThreads]+")");
+			case -1:
+				output.write("Error on ID: "+actualIDs[id%maxThreads]+" ("+names[id%maxThreads]+") ... no exclude");
 				output.newLine();
 				output.write(Line[id%maxThreads].getUrl());
 				output.newLine();
@@ -100,11 +102,37 @@ public class UrlLookUp implements IUpdateChecker{
 				
 				sqlfile.write("--UPDATE urls SET url='#Change this#' WHERE id = "+actualIDs[id%maxThreads]+";");
 				sqlfile.newLine();
+				break;
+			case -2:
+				output.write("Error on ID: "+actualIDs[id%maxThreads]+" ("+names[id%maxThreads]+") ... Socket error");
+				output.newLine();
+				output.write(Line[id%maxThreads].getUrl());
+				output.newLine();
+				output.newLine();
+				
+				sqlfile.write("--UPDATE urls SET url='#Change this#' WHERE id = "+actualIDs[id%maxThreads]+";");
+				sqlfile.newLine();
+				break;
+			case -3:
+				output.write("Error on ID: "+actualIDs[id%maxThreads]+" ("+names[id%maxThreads]+") ... couldn't read website");
+				output.newLine();
+				output.write(Line[id%maxThreads].getUrl());
+				output.newLine();
+				output.newLine();
+				
+				sqlfile.write("--UPDATE urls SET url='#Change this#' WHERE id = "+actualIDs[id%maxThreads]+";");
+				sqlfile.newLine();
+				break;
 			}
 		}catch(IOException e){
 			e.printStackTrace();
 		}
 	}
+	
+	/**
+	* gets results in a string format
+	*/
+	public String[] getResults();
 	
 	/**
 	* starts scan of input file
