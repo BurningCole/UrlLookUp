@@ -11,6 +11,7 @@ public class UrlLookUp implements IUpdateChecker{
 	private String accept;
 	private String exclude;
 	private JLabel text1,text2;
+	private ArrayList<UrlUpdate> Updates;
 	private DbBasic db;
 	
 	//create arrays
@@ -36,12 +37,14 @@ public class UrlLookUp implements IUpdateChecker{
 		accept=Accept;
 		exclude=Exclude;
 		isDB=false;
+		Updates=new ArrayList<UrlUpdate>();
 	}
 	public UrlLookUp(DbBasic DataBaseConn){
 		db=DataBaseConn;
 		accept="=\"back";
 		exclude="=\"clearfix";
 		isDB=true;
+		Updates=new ArrayList<UrlUpdate>();
 	}
 	
 	private void waitForResult(int id,BufferedWriter output){
@@ -62,10 +65,12 @@ public class UrlLookUp implements IUpdateChecker{
 		//if success
 		try{
 			switch(result){
-			case 0:
+			case 1:
 				output.write("Manga Line: "+actualIDs[id%maxThreads]+" ("+names[id%maxThreads]+")");
 				output.newLine();
 				ArrayList<String> urls = Line[id%maxThreads].getAllUrls();
+				
+				
 				for (String url:urls){
 					output.write("\t"+url);
 					output.newLine();
@@ -74,20 +79,31 @@ public class UrlLookUp implements IUpdateChecker{
 				output.newLine();
 				
 				String newUrl=Line[id%maxThreads].getUrl();
+				
+				System.out.println(newUrl+":");
 				ResultSet rs=db.doQuery("SELECT url FROM websites");
 				try{
-				while(rs.next()){
-					System.out.println(newUrl+":"+rs.getString("url"));
-					if(newUrl.startsWith(rs.getString("url"))){
-					System.out.println("Match");
-						newUrl=newUrl.substring(
-							rs.getString("url").length()
-						);
-						break;
+					while(rs.next()){
+						System.out.println(newUrl+":"+rs.getString("url"));
+						if(newUrl.startsWith(rs.getString("url"))){
+							System.out.println("Match");
+							newUrl=newUrl.substring(
+								rs.getString("url").length()
+							);
+							break;
+						}
 					}
-				}
-				sqlfile.write("UPDATE urls SET url='"+newUrl+"' WHERE id = "+actualIDs[id%maxThreads]+";");
-				sqlfile.newLine();
+					UrlUpdate update=new UrlUpdate(
+						actualIDs[id%maxThreads],	//id of website
+						UrlUpdate.NORMAL,				//type
+						urls,						//all update urls
+						newUrl,						//new url part
+						names[id%maxThreads]		//url name reference
+					);
+					Updates.add(update);
+					
+					sqlfile.write(update.getSQLStatement());
+					sqlfile.newLine();
 				}catch(SQLException e){
 					e.printStackTrace();
 				}
@@ -100,7 +116,16 @@ public class UrlLookUp implements IUpdateChecker{
 				output.newLine();
 				output.newLine();
 				
-				sqlfile.write("--UPDATE urls SET url='#Change this#' WHERE id = "+actualIDs[id%maxThreads]+";");
+				UrlUpdate update=new UrlUpdate(
+					actualIDs[id%maxThreads],	//id of website
+					UrlUpdate.MISSING_EXCLUDE,		//type
+					null,						//all update urls
+					null,						//new url part
+					names[id%maxThreads]		//url name reference
+				);
+				Updates.add(update);
+				
+				sqlfile.write(update.getSQLStatement());
 				sqlfile.newLine();
 				break;
 			case -2:
@@ -132,7 +157,9 @@ public class UrlLookUp implements IUpdateChecker{
 	/**
 	* gets results in a string format
 	*/
-	public String[] getResults();
+	public ArrayList<UrlUpdate> getResults(){
+		return Updates;
+	}
 	
 	/**
 	* starts scan of input file

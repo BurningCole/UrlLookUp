@@ -1,6 +1,7 @@
 import java.sql.*;
 public class Main{
 	public static void main(String[] args)throws Exception{
+		/*
 		//find update file
 		Class<?> c = UrlLookUp.class;
 		//remove unnesasary parts of string that are returned
@@ -17,5 +18,7 @@ public class Main{
 		lookup.startScan(fileLoc+"updates.txt");
 		
 		db.close();
+		*/
+		GUI.startGUI(args);
 	}
 }
