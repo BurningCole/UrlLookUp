@@ -1,4 +1,4 @@
-import java.util.ArrayList;
+import java.util.List;
 
 public class UrlUpdate{
 	
@@ -9,12 +9,12 @@ public class UrlUpdate{
 	
 	private int ID;
 	private int type;
-	private ArrayList<String> urls;
+	private List<String> urls;
 	private String name;
 	private String urlSubPart;
 	
 	
-	public UrlUpdate(int ID,int Type,ArrayList<String> Urls,String UrlSubPart,String Name){
+	public UrlUpdate(int ID,int Type,List<String> Urls,String UrlSubPart,String Name){
 		this.ID=ID;
 		this.type=Type;
 		this.urls=Urls;
@@ -34,7 +34,7 @@ public class UrlUpdate{
 	public String name(){
 		return name;
 	}
-	public ArrayList<String> urls(){
+	public List<String> urls(){
 		return urls;
 	}
 	

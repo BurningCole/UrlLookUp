@@ -2,6 +2,7 @@ import java.net.*;
 import java.io.*;
 import java.awt.Desktop;
 import javax.swing.*;
+import java.util.List;
 import java.util.ArrayList;
 import java.sql.*;
 
@@ -11,7 +12,7 @@ public class UrlLookUp implements IUpdateChecker{
 	private String accept;
 	private String exclude;
 	private JLabel text1,text2;
-	private ArrayList<UrlUpdate> Updates;
+	private List<UrlUpdate> Updates;
 	private DbBasic db;
 	
 	//create arrays
@@ -39,6 +40,7 @@ public class UrlLookUp implements IUpdateChecker{
 		isDB=false;
 		Updates=new ArrayList<UrlUpdate>();
 	}
+	
 	public UrlLookUp(DbBasic DataBaseConn){
 		db=DataBaseConn;
 		accept="=\"back";
@@ -157,7 +159,7 @@ public class UrlLookUp implements IUpdateChecker{
 	/**
 	* gets results in a string format
 	*/
-	public ArrayList<UrlUpdate> getResults(){
+	public List<UrlUpdate> getResults(){
 		return Updates;
 	}
 	

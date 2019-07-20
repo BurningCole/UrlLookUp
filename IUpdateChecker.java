@@ -1,7 +1,7 @@
-import java.util.ArrayList;
+import java.util.List;
 
 public interface IUpdateChecker{
 	public void startScan(String outputFile);
 	public boolean testUrlFor(String url,String string,String exclude)throws Exception;
-	public ArrayList<UrlUpdate> getResults();
+	public List<UrlUpdate> getResults();
 }
