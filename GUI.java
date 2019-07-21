@@ -1,12 +1,14 @@
 import javafx.application.Application;
-import javafx.stage.Stage;
-import javafx.scene.Scene;
-import javafx.scene.layout.Pane;
-import javafx.scene.control.ScrollPane;
-import javafx.scene.control.Button;
-import javafx.scene.control.TitledPane;
 import javafx.event.ActionEvent; 
 import javafx.event.EventHandler; 
+import javafx.scene.Scene;
+import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.control.TitledPane;
+import javafx.scene.layout.Pane;
+import javafx.stage.Stage;
+import javafx.scene.layout.Region ;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -101,7 +103,8 @@ public class GUI extends Application {
 		Scene oldScene=primaryStage.getScene();
 		
 		int values=0;
-		ArrayList<TitledPane> segments = new ArrayList<TitledPane>();
+		ArrayList<CheckBox> checkboxes = new ArrayList<CheckBox>();
+		Region prevPane=new Region();
 		
 		DbBasic db = getDataBase();
 		ScrollPane sPane = new ScrollPane();
@@ -111,6 +114,7 @@ public class GUI extends Application {
 		
 		Pane internalPane=new Pane();
 		sPane.setContent(internalPane);
+		internalPane.prefWidthProperty().bind(sPane.widthProperty());
 		
 		Scene scene= new Scene(sPane, 500, 900);
 		
@@ -130,20 +134,18 @@ public class GUI extends Application {
 			}
 		}*/
 		//start scan
-		//lookup.startScan(getDataFileLoc()+"updates.txt");
-		ArrayList<String> s1 = new ArrayList<String>();
-		s1.add("test");
+		lookup.startScan();
+		
+		/*ArrayList<String> s1 = new ArrayList<String>();
+		s1.add("https://github.com/");
+		s1.add("bananana");
+		s1.add("Extremely long url with enough letters to overflow the text box jb jbsjubjhdjb,kcfhnshbkvn bnhsvlvhn vsilkhbi");
 		updates.add(new UrlUpdate(0,UrlUpdate.NORMAL,s1,"","Name 1"));
+		updates.add(new UrlUpdate(0,UrlUpdate.NORMAL,s1,"","Name 2"));*/
 		for(;values<updates.size();values++){//add all aditional values
 			//get update
 			UrlUpdate curUpdate=updates.get(values);
-			//add new segment
-			Pane segPlane = new Pane();
-			TitledPane segment=new TitledPane(curUpdate.name(),segPlane);
-			//name,url links, check/
-			segments.add(segment);
-			internalPane.getChildren().add(segment);
-			
+			prevPane=addScanResult(curUpdate,internalPane,prevPane,checkboxes);
 		}
 		
 		if(updates.size()==0){
@@ -159,29 +161,26 @@ public class GUI extends Application {
 			}
 		});
 		backBtn.layoutXProperty().bind(primaryStage.widthProperty().multiply(2).divide(3).subtract(backBtn.widthProperty().divide(2)));//button offset to middle and then shifted by half the width
-		backBtn.layoutYProperty().bind(primaryStage.widthProperty().divide(12));//the multiply adds the extra vertical offset and the divide is the divide gets it to the right size
+		backBtn.layoutYProperty().bind(primaryStage.widthProperty().divide(12).add(prevPane.heightProperty().add(prevPane.layoutYProperty())));//the multiply adds the extra vertical offset and the divide is the divide gets it to the right size
 		
 		//run sql & reload button
 		Button FinishedBtn =new Button("Verify");
 		FinishedBtn.setOnAction(new EventHandler<ActionEvent>() { 
 			public void handle(ActionEvent e)
 			{ 
-				//calculate sql
-				String sqlQuery="";
+				//calculate sql and run
+				DbBasic dataBase = getDataBase();
 				for(int i=0;i<updates.size();i++){
-					//if(false)//switch to if check checked
+					if(checkboxes.get(i).isSelected())//switch to if check checked
 						switch(updates.get(i).getType()){
 							case UrlUpdate.NORMAL:	//normal update
-							sqlQuery+=updates.get(i).getSQLStatement();
+							dataBase.runSQL(updates.get(i).getSQLStatement());
 							break;
 							default:				//other unhandled update
 							break;
 						}
 				}
-				//run sql
-				//DbBasic dataBase = getDataBase();
-				//dataBase.doQuery(sqlQuery);
-				//dataBase.close();
+				dataBase.close();
 				
 				//reload scene
 				primaryStage.setScene(oldScene);
@@ -189,11 +188,65 @@ public class GUI extends Application {
 			}
 		});
 		FinishedBtn.layoutXProperty().bind(primaryStage.widthProperty().divide(3).subtract(FinishedBtn.widthProperty().divide(2)));//button offset to middle and then shifted by half the width
-		FinishedBtn.layoutYProperty().bind(primaryStage.widthProperty().divide(12));//the multiply adds the extra vertical offset and the divide is the divide gets it to the right size
+		FinishedBtn.layoutYProperty().bind(backBtn.layoutYProperty());//the multiply adds the extra vertical offset and the divide is the divide gets it to the right size
 		
 		internalPane.getChildren().addAll(backBtn,FinishedBtn);
 		db.close();
 		
+	}
+	
+	private TitledPane addScanResult(UrlUpdate curUpdate,Pane internalPane, Region prevPane,List checkboxes){
+		//add new segment
+		Pane segPane = new Pane();//pane to put url labels in
+		
+		
+		//name,url links, check/
+		int urls=0;
+		if(curUpdate.urls()!=null)
+		for(String website:curUpdate.urls()){
+			//add single url part
+			Button link = new Button(website);
+			link.prefWidthProperty().bind(segPane.widthProperty());
+			link.maxWidthProperty().bind(segPane.widthProperty());
+			link.layoutYProperty().bind(link.heightProperty().multiply(urls));
+			link.setOnAction(new EventHandler<ActionEvent>() { 
+				public void handle(ActionEvent e)
+				{ 
+					try{
+						String finalWebsite;
+						if(!(website.startsWith("http")||website.startsWith("Http"))){
+							finalWebsite="http://"+website;
+						}else{
+							finalWebsite=website;
+						}
+					java.awt.Desktop.getDesktop().browse(new java.net.URI(finalWebsite));
+					}catch(Exception ex){
+						System.out.println("Error");
+					}
+				}
+			});
+			urls++;
+			segPane.getChildren().add(link);
+			if(segPane.prefHeightProperty().isBound())
+				segPane.prefHeightProperty().unbind();
+			segPane.prefHeightProperty().bind(link.heightProperty().multiply(urls));
+		}
+		
+		TitledPane segment=new TitledPane(curUpdate.name(),segPane);//
+		segment.prefWidthProperty().bind(internalPane.widthProperty().multiply(7).divide(8));// 7/8 width
+		segment.layoutYProperty().bind(prevPane.layoutYProperty().add(prevPane.heightProperty()));
+		segment.setExpanded(false);
+		prevPane=segment;
+		
+		CheckBox check = new CheckBox();
+		check.prefWidthProperty().bind(internalPane.widthProperty().divide(16));
+		check.prefHeightProperty().bind(check.widthProperty());
+		check.layoutXProperty().bind(internalPane.widthProperty().multiply(29).divide(32));
+		check.layoutYProperty().bind(segment.layoutYProperty());
+		checkboxes.add(check);
+		
+		internalPane.getChildren().addAll(segment,check);
+		return segment;
 	}
 	
 	private String getDataFileLoc(){

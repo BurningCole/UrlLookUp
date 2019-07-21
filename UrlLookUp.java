@@ -26,8 +26,6 @@ public class UrlLookUp implements IUpdateChecker{
 	private StringBuilder total;
 	private int finished=0;
 	
-	BufferedWriter sqlfile;
-	
 	/**
 	* FileName: name of file that contains urls
 	* Accept: what string marks link
@@ -49,7 +47,7 @@ public class UrlLookUp implements IUpdateChecker{
 		Updates=new ArrayList<UrlUpdate>();
 	}
 	
-	private void waitForResult(int id,BufferedWriter output){
+	private void waitForResult(int id){
 		boolean waited=false;
 		while(lookups[id%maxThreads].isAlive()){
 			try{
@@ -65,30 +63,16 @@ public class UrlLookUp implements IUpdateChecker{
 		//get result
 		int result=Line[id%maxThreads].result();
 		//if success
-		try{
 			switch(result){
 			case 1:
-				output.write("Manga Line: "+actualIDs[id%maxThreads]+" ("+names[id%maxThreads]+")");
-				output.newLine();
 				ArrayList<String> urls = Line[id%maxThreads].getAllUrls();
-				
-				
-				for (String url:urls){
-					output.write("\t"+url);
-					output.newLine();
-					
-				}
-				output.newLine();
 				
 				String newUrl=Line[id%maxThreads].getUrl();
 				
-				System.out.println(newUrl+":");
 				ResultSet rs=db.doQuery("SELECT url FROM websites");
 				try{
 					while(rs.next()){
-						System.out.println(newUrl+":"+rs.getString("url"));
 						if(newUrl.startsWith(rs.getString("url"))){
-							System.out.println("Match");
 							newUrl=newUrl.substring(
 								rs.getString("url").length()
 							);
@@ -104,19 +88,12 @@ public class UrlLookUp implements IUpdateChecker{
 					);
 					Updates.add(update);
 					
-					sqlfile.write(update.getSQLStatement());
-					sqlfile.newLine();
 				}catch(SQLException e){
 					e.printStackTrace();
 				}
 				break;
 			//if error
 			case -1:
-				output.write("Error on ID: "+actualIDs[id%maxThreads]+" ("+names[id%maxThreads]+") ... no exclude");
-				output.newLine();
-				output.write(Line[id%maxThreads].getUrl());
-				output.newLine();
-				output.newLine();
 				
 				UrlUpdate update=new UrlUpdate(
 					actualIDs[id%maxThreads],	//id of website
@@ -127,33 +104,14 @@ public class UrlLookUp implements IUpdateChecker{
 				);
 				Updates.add(update);
 				
-				sqlfile.write(update.getSQLStatement());
-				sqlfile.newLine();
 				break;
 			case -2:
-				output.write("Error on ID: "+actualIDs[id%maxThreads]+" ("+names[id%maxThreads]+") ... Socket error");
-				output.newLine();
-				output.write(Line[id%maxThreads].getUrl());
-				output.newLine();
-				output.newLine();
 				
-				sqlfile.write("--UPDATE urls SET url='#Change this#' WHERE id = "+actualIDs[id%maxThreads]+";");
-				sqlfile.newLine();
 				break;
 			case -3:
-				output.write("Error on ID: "+actualIDs[id%maxThreads]+" ("+names[id%maxThreads]+") ... couldn't read website");
-				output.newLine();
-				output.write(Line[id%maxThreads].getUrl());
-				output.newLine();
-				output.newLine();
 				
-				sqlfile.write("--UPDATE urls SET url='#Change this#' WHERE id = "+actualIDs[id%maxThreads]+";");
-				sqlfile.newLine();
 				break;
 			}
-		}catch(IOException e){
-			e.printStackTrace();
-		}
 	}
 	
 	/**
@@ -165,9 +123,8 @@ public class UrlLookUp implements IUpdateChecker{
 	
 	/**
 	* starts scan of input file
-	* outputFile: what file to put results in
 	*/
-	public void startScan(String outputFile){
+	public void startScan(){
 		//create editable string for loading bars
 		current=new StringBuilder("[");
 		for(int i=0;i<maxThreads;i++)
@@ -198,8 +155,6 @@ public class UrlLookUp implements IUpdateChecker{
 			}else{
 				br = new BufferedReader(new FileReader(fileName));
 			}
-			BufferedWriter text = new BufferedWriter(new FileWriter(outputFile));
-			sqlfile=new BufferedWriter(new FileWriter(outputFile.replace(".txt",".sql")));
 			int read=0,i=0;
 		
 			
@@ -211,11 +166,8 @@ public class UrlLookUp implements IUpdateChecker{
 						//if no lookup in space
 						if(lookups[read%maxThreads]==null){
 							System.out.println("Line: "+(read+1)+" not a correct format");
-							text.write("Manga Line: "+(read+1)+" not a correct format");
-							text.newLine();
-							text.newLine();
 						}else{
-							waitForResult(i,text);
+							waitForResult(i);
 						}
 						i++;
 					}
@@ -244,11 +196,8 @@ public class UrlLookUp implements IUpdateChecker{
 					//if no lookup in space
 					if(lookups[read%maxThreads]==null){
 						System.out.println("Line: "+(read+1)+" not a correct format");
-						text.write("Manga Line: "+(read+1)+" not a correct format");
-						text.newLine();
-						text.newLine();
 					}else{
-						waitForResult(i,text);
+						waitForResult(i);
 					}
 					i++;
 				}
@@ -274,18 +223,9 @@ public class UrlLookUp implements IUpdateChecker{
 			for(;i<read;i++){
 				if(lookups[i%maxThreads]==null){
 						System.out.println("Line: "+(i+1)+" not a correct format");
-						text.write("Manga Line: "+(i+1)+" not a correct format");
-						text.newLine();
-						text.newLine();
 				}else{
-					waitForResult(i,text);
+					waitForResult(i);
 				}
-			}
-			text.close();
-			sqlfile.close();
-			
-			if (Desktop.isDesktopSupported()){
-				Desktop.getDesktop().edit(new File(outputFile));
 			}
 		}catch(FileNotFoundException e){
 			System.out.println("\nFile didn't exist");
@@ -331,7 +271,6 @@ public class UrlLookUp implements IUpdateChecker{
 			{
 				if(line.contains(string)){
 					String[] tokensVal = line.split("\"");
-					System.out.println(tokensVal[1]);
 					return true;
 				}else if(line.contains(exclude)){
 					break;

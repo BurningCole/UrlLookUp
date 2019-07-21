@@ -94,11 +94,28 @@ public class DbBasic {
 		try{
 			Statement statement = con.createStatement();
 			rs=statement.executeQuery(query);
-			System.out.println("statement:\n"+query+"\nresolved");
 		}catch(SQLException e){
 			System.out.println("statement:\n"+query+"\nUnresolveable");
 			e.printStackTrace();
 		}
 		return rs;
+	}
+	
+	public void runSQL(String sql){
+		try{
+			Statement statement = con.createStatement();
+			statement.execute(sql);
+		}catch(SQLException e){
+			System.out.println("SQL:\n"+sql+"\nUnresolveable");
+			e.printStackTrace();
+		}
+	}
+	
+	public void runScript(String script){
+		String[] commands = script.split(";");
+		for(String command:commands){
+			if(command!="")
+			doQuery(command);
+		}
 	}
 }
