@@ -161,7 +161,7 @@ public class GUI extends Application {
 			}
 		});
 		backBtn.layoutXProperty().bind(primaryStage.widthProperty().multiply(2).divide(3).subtract(backBtn.widthProperty().divide(2)));//button offset to middle and then shifted by half the width
-		backBtn.layoutYProperty().bind(primaryStage.widthProperty().divide(12).add(prevPane.heightProperty().add(prevPane.layoutYProperty())));//the multiply adds the extra vertical offset and the divide is the divide gets it to the right size
+		backBtn.layoutYProperty().bind(backBtn.heightProperty().add(prevPane.heightProperty().add(prevPane.layoutYProperty())));//the multiply adds the extra vertical offset and the divide is the divide gets it to the right size
 		
 		//run sql & reload button
 		Button FinishedBtn =new Button("Verify");
@@ -191,6 +191,7 @@ public class GUI extends Application {
 		FinishedBtn.layoutYProperty().bind(backBtn.layoutYProperty());//the multiply adds the extra vertical offset and the divide is the divide gets it to the right size
 		
 		internalPane.getChildren().addAll(backBtn,FinishedBtn);
+		internalPane.prefHeightProperty().bind(backBtn.heightProperty().multiply(2).add(backBtn.layoutYProperty()));
 		db.close();
 		
 	}
@@ -202,10 +203,11 @@ public class GUI extends Application {
 		
 		//name,url links, check/
 		int urls=0;
-		if(curUpdate.urls()!=null)
+		Button link=null;;
+		if(curUpdate.urls()!=null){
 		for(String website:curUpdate.urls()){
 			//add single url part
-			Button link = new Button(website);
+			link = new Button(website);
 			link.prefWidthProperty().bind(segPane.widthProperty());
 			link.maxWidthProperty().bind(segPane.widthProperty());
 			link.layoutYProperty().bind(link.heightProperty().multiply(urls));
@@ -227,22 +229,22 @@ public class GUI extends Application {
 			});
 			urls++;
 			segPane.getChildren().add(link);
-			if(segPane.prefHeightProperty().isBound())
-				segPane.prefHeightProperty().unbind();
-			segPane.prefHeightProperty().bind(link.heightProperty().multiply(urls));
 		}
-		
+		if(link!=null)
+		segPane.prefHeightProperty().bind(link.heightProperty().multiply(urls));
+		}
 		TitledPane segment=new TitledPane(curUpdate.name(),segPane);//
-		segment.prefWidthProperty().bind(internalPane.widthProperty().multiply(7).divide(8));// 7/8 width
 		segment.layoutYProperty().bind(prevPane.layoutYProperty().add(prevPane.heightProperty()));
 		segment.setExpanded(false);
 		prevPane=segment;
 		
 		CheckBox check = new CheckBox();
-		check.prefWidthProperty().bind(internalPane.widthProperty().divide(16));
-		check.prefHeightProperty().bind(check.widthProperty());
-		check.layoutXProperty().bind(internalPane.widthProperty().multiply(29).divide(32));
+		
+		segment.prefWidthProperty().bind(internalPane.widthProperty().subtract(check.widthProperty().multiply(3)));// 7/8 width
+		segment.maxWidthProperty().bind(internalPane.widthProperty().subtract(check.widthProperty().multiply(3)));// 7/8 width
+		
 		check.layoutYProperty().bind(segment.layoutYProperty());
+		check.layoutXProperty().bind(internalPane.widthProperty().subtract(check.widthProperty().multiply(2)));
 		checkboxes.add(check);
 		
 		internalPane.getChildren().addAll(segment,check);
