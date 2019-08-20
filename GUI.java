@@ -11,11 +11,13 @@ import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.control.TextField;
 import javafx.scene.control.TitledPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region ;
 import javafx.stage.Stage;
 
+import java.sql.*;
 import java.util.List;
 import java.util.ArrayList;
 
@@ -133,10 +135,8 @@ public class GUI extends Application {
 		
 		List<UrlUpdate> updates=lookup.getResults();
 		if( updates instanceof ListExpression){
-			System.out.println("Listproperty");
 			((ListExpression)updates).sizeProperty().addListener(new ChangeListener(){
 				@Override public void changed(ObservableValue o,Object oldVal, Object newVal){
-					System.out.println("Update-"+updates.size());
 					for(;values<updates.size();values++){
 						UrlUpdate curUpdate=updates.get(values);
 						Platform.runLater(new Runnable() {
@@ -147,7 +147,7 @@ public class GUI extends Application {
 					}
 				}
 			});
-		}else System.out.println("Not listproperty");
+		}
 		//start scan
 		
 		Task<Void> scan = new Task<Void>(){
@@ -164,7 +164,6 @@ public class GUI extends Application {
 				db.close();
 				
 				if(!(updates instanceof ListExpression)){
-					System.out.println("clearing");
 					for(;values<updates.size();values++){//add all aditional values
 						//get update
 						UrlUpdate curUpdate=updates.get(values);
@@ -199,10 +198,27 @@ public class GUI extends Application {
 							if(checkboxes.get(i).isSelected())//switch to if check checked
 								switch(updates.get(i).getType()){
 									case UrlUpdate.NORMAL:	//normal update
-									dataBase.runSQL(updates.get(i).getSQLStatement());
-									break;
+										dataBase.runSQL(updates.get(i).getSQLStatement());
+										break;
+									case UrlUpdate.MISSING_EXCLUDE:
+										if(updates.get(i).urls().size()!=0){
+											String SQLUpdate=updates.get(i).getSQLStatement();
+											List<String> data =updates.get(i).urls();
+											String change="";
+											for(int j=0;j<data.size();j++){
+												if(j>0){
+													change+=",";
+												}
+												change+=data.get(j);
+											}
+											SQLUpdate = SQLUpdate.replace("^",change);
+											dataBase.runSQL(
+												SQLUpdate
+											);
+										}
+										break;
 									default:				//other unhandled update
-									break;
+										break;
 								}
 						}
 						dataBase.close();
@@ -232,36 +248,70 @@ public class GUI extends Application {
 		//name,url links, check/
 		int urls=0;
 		Button link=null;
-		if(curUpdate.urls()!=null){
-		for(String website:curUpdate.urls()){
-			//add single url part
-			link = new Button(website);
-			link.prefWidthProperty().bind(segPane.widthProperty());
-			link.maxWidthProperty().bind(segPane.widthProperty());
-			link.layoutYProperty().bind(link.heightProperty().multiply(urls));
-			link.setOnAction(new EventHandler<ActionEvent>() { 
-				public void handle(ActionEvent e)
-				{ 
-					try{
-						String finalWebsite;
-						if(!(website.startsWith("http")||website.startsWith("Http"))){
-							finalWebsite="http://"+website;
-						}else{
-							finalWebsite=website;
+		if(curUpdate.urls()!=null&&curUpdate.getType()==UrlUpdate.NORMAL){
+			for(String website:curUpdate.urls()){
+				//add single url part
+				link = new Button(website);
+				link.prefWidthProperty().bind(segPane.widthProperty());
+				link.maxWidthProperty().bind(segPane.widthProperty());
+				link.layoutYProperty().bind(link.heightProperty().multiply(urls));
+				link.setOnAction(new EventHandler<ActionEvent>() { 
+					public void handle(ActionEvent e)
+					{ 
+						try{
+							String finalWebsite;
+							if(!(website.startsWith("http")||website.startsWith("Http"))){
+								finalWebsite="http://"+website;
+							}else{
+								finalWebsite=website;
+							}
+						java.awt.Desktop.getDesktop().browse(new java.net.URI(finalWebsite));
+						}catch(Exception ex){
+							System.out.println("Error");
 						}
-					java.awt.Desktop.getDesktop().browse(new java.net.URI(finalWebsite));
-					}catch(Exception ex){
-						System.out.println("Error");
 					}
-				}
-			});
-			urls++;
-			segPane.getChildren().add(link);
-		}
-		if(link!=null)
-		segPane.prefHeightProperty().bind(link.heightProperty().multiply(urls));
-		}
-		TitledPane segment=new TitledPane(curUpdate.name(),segPane);//
+				});
+				urls++;
+				segPane.getChildren().add(link);
+			}
+			if(link!=null)
+			segPane.prefHeightProperty().bind(link.heightProperty().multiply(urls));
+		}else
+			if(curUpdate.getType()==UrlUpdate.MISSING_EXCLUDE){
+				TextField urlEditField = new TextField(curUpdate.getUrl());
+				urlEditField.prefWidthProperty().bind(segPane.widthProperty());
+				urlEditField.maxWidthProperty().bind(segPane.widthProperty());
+				urlEditField.textProperty().addListener(new ChangeListener<String>() {
+					@Override
+					public void changed(final ObservableValue<? extends String> observable, final String oldValue, final String newValue) {
+						curUpdate.urls().clear();
+						DbBasic db = getDataBase();
+						ResultSet rs=db.doQuery("SELECT url,webId FROM websites");
+						try{
+							while(rs.next()){
+								if(newValue.startsWith(rs.getString("url"))){
+									String newUrl=newValue.substring(
+										rs.getString("url").length()
+									);
+									if(!curUpdate.getUrl().startsWith(rs.getString("url")))
+										curUpdate.urls().add("webId = "+rs.getString("webId")+" ");
+									if(!curUpdate.getUrl().endsWith(newUrl))
+										curUpdate.urls().add("URL = '"+newUrl+"' ");
+									break;
+								}
+							}
+						}catch(SQLException e){
+							e.printStackTrace();
+						}
+						db.close();
+					}
+				});
+				
+				segPane.getChildren().add(urlEditField);
+				segPane.prefHeightProperty().bind(urlEditField.heightProperty());
+				
+			}
+		TitledPane segment=new TitledPane(curUpdate.name(),segPane);
 		segment.layoutYProperty().bind(prevPane.layoutYProperty().add(prevPane.heightProperty()));
 		segment.setExpanded(false);
 		prevPane=segment;
@@ -270,6 +320,9 @@ public class GUI extends Application {
 		
 		segment.prefWidthProperty().bind(internalPane.widthProperty().subtract(check.widthProperty().multiply(2)));// 7/8 width
 		segment.maxWidthProperty().bind(internalPane.widthProperty().subtract(check.widthProperty().multiply(2)));// 7/8 width
+		
+		segPane.prefWidthProperty().bind(segment.widthProperty());
+		segPane.maxWidthProperty().bind(segment.widthProperty());
 		
 		check.layoutYProperty().bind(segment.layoutYProperty().add(segment.heightProperty().subtract(check.heightProperty()).divide(2)));
 		check.layoutXProperty().bind(internalPane.widthProperty().subtract(check.widthProperty().multiply(7).divide(4)));
@@ -292,7 +345,6 @@ public class GUI extends Application {
 	
 	private DbBasic getDataBase(){
 		String fileLoc=getDataFileLoc();
-		System.out.println(fileLoc);
 		DbBasic db=new DbBasic(fileLoc+"Urls.db");
 		return db;
 	}

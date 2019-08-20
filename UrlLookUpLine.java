@@ -131,7 +131,7 @@ public class UrlLookUpLine implements Runnable{
 			if(!hasExclude){
 				// print out error info
 				System.out.println(url+" missing exclude...");
-				urlMem.add("Error: "+url+" missing exclude...\n");
+				urlMem.add(url);
 				hasUpdate=-1;
 			}
 			//close reader

@@ -63,8 +63,6 @@ public class UrlLookUp implements IUpdateChecker{
 				System.out.println("Thread joining error");
 			}
 		}
-		if(waited)
-			System.out.println("read "+(id+1)+" Lines");
 		//get result
 		int result=Line[id%maxThreads].result();
 		//if success
@@ -103,8 +101,8 @@ public class UrlLookUp implements IUpdateChecker{
 				UrlUpdate update=new UrlUpdate(
 					actualIDs[id%maxThreads],	//id of website
 					UrlUpdate.MISSING_EXCLUDE,		//type
-					null,						//all update urls
-					null,						//new url part
+					new ArrayList<String>(),						//all update urls
+					Line[id%maxThreads].getUrl(),						//new url part
 					names[id%maxThreads]		//url name reference
 				);
 				Updates.add(update);
@@ -130,6 +128,7 @@ public class UrlLookUp implements IUpdateChecker{
 	* starts scan of input file
 	*/
 	public void startScan(){
+		System.out.println("\n--START SCAN---");
 		//create editable string for loading bars
 		current=new StringBuilder("[");
 		for(int i=0;i<maxThreads;i++)
@@ -237,7 +236,7 @@ public class UrlLookUp implements IUpdateChecker{
 		}catch(IOException e){
 			System.out.println("\nCouldn't access file");
 		}
-		System.out.println("\n---DONE---");
+		System.out.println("\n---DONE SCAN---");
 		frame.dispose();
 	}
 	

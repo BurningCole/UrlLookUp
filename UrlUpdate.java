@@ -26,7 +26,7 @@ public class UrlUpdate{
 			case NORMAL:
 				return "UPDATE urls SET url='"+urlSubPart+"' WHERE id = "+ID+";";
 			case MISSING_EXCLUDE:
-				return "--UPDATE urls SET ^ WHERE id = "+ID+";";
+				return "UPDATE urls SET ^ WHERE id = "+ID+";";
 			default:
 				return "--OTHER ERROR";
 		}
@@ -40,6 +40,14 @@ public class UrlUpdate{
 	
 	public int getType(){
 		return type;
+	}
+	
+	public String getUrl(){
+		return urlSubPart;
+	}
+	
+	public void setUrl(String url){
+		urlSubPart=url;
 	}
 }
 /*
