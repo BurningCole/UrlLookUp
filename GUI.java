@@ -1,4 +1,10 @@
 import javafx.application.Application;
+import javafx.application.Platform;
+import javafx.beans.binding.ListExpression;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
+import javafx.concurrent.Task;
+import javafx.concurrent.WorkerStateEvent;
 import javafx.event.ActionEvent; 
 import javafx.event.EventHandler; 
 import javafx.scene.Scene;
@@ -7,8 +13,8 @@ import javafx.scene.control.CheckBox;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TitledPane;
 import javafx.scene.layout.Pane;
-import javafx.stage.Stage;
 import javafx.scene.layout.Region ;
+import javafx.stage.Stage;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -98,13 +104,15 @@ public class GUI extends Application {
 		//set stage scene to new scene
 		primaryStage.setScene(scene);
 	}
+	static int values=0;
+	static Region prevPane;
 	
 	private void HandleScan(Stage primaryStage){
 		Scene oldScene=primaryStage.getScene();
-		
-		int values=0;
+		values=0;
+		//final Integer values=0;
 		ArrayList<CheckBox> checkboxes = new ArrayList<CheckBox>();
-		Region prevPane=new Region();
+		prevPane=new Region();
 		
 		DbBasic db = getDataBase();
 		ScrollPane sPane = new ScrollPane();
@@ -122,78 +130,98 @@ public class GUI extends Application {
 		
 		//create lookup
 		IUpdateChecker lookup=new UrlLookUp(db);
+		
 		List<UrlUpdate> updates=lookup.getResults();
-		/*if( updates instanceof ListExpression){
-			(ListExpression)updates.sizeProperty().addListener(new ChangeListener(){
-			@Override public void changed(ObservableValue o,Object oldVal, Object newVal){
-				for(;values<updates.size();values++){
-					Pane valuePane= new Pane();
-					
-					internalPane.getChildren().add(valuePane);
+		if( updates instanceof ListExpression){
+			System.out.println("Listproperty");
+			((ListExpression)updates).sizeProperty().addListener(new ChangeListener(){
+				@Override public void changed(ObservableValue o,Object oldVal, Object newVal){
+					System.out.println("Update-"+updates.size());
+					for(;values<updates.size();values++){
+						UrlUpdate curUpdate=updates.get(values);
+						Platform.runLater(new Runnable() {
+							@Override public void run() {
+								prevPane=addScanResult(curUpdate,internalPane,prevPane,checkboxes);
+							}
+						});
+					}
 				}
-			}
-		}*/
+			});
+		}else System.out.println("Not listproperty");
 		//start scan
-		lookup.startScan();
 		
-		/*ArrayList<String> s1 = new ArrayList<String>();
-		s1.add("https://github.com/");
-		s1.add("bananana");
-		s1.add("Extremely long url with enough letters to overflow the text box jb jbsjubjhdjb,kcfhnshbkvn bnhsvlvhn vsilkhbi");
-		updates.add(new UrlUpdate(0,UrlUpdate.NORMAL,s1,"","Name 1"));
-		updates.add(new UrlUpdate(0,UrlUpdate.NORMAL,s1,"","Name 2"));*/
-		for(;values<updates.size();values++){//add all aditional values
-			//get update
-			UrlUpdate curUpdate=updates.get(values);
-			prevPane=addScanResult(curUpdate,internalPane,prevPane,checkboxes);
-		}
-		
-		if(updates.size()==0){
-			//tell user no updates found
-		}
-		
-		//back button
-		Button backBtn =new Button("Back");
-		backBtn.setOnAction(new EventHandler<ActionEvent>() { 
-			public void handle(ActionEvent e)
-			{ 
-				primaryStage.setScene(oldScene);
+		Task<Void> scan = new Task<Void>(){
+			@Override 
+			public Void call() throws InterruptedException {
+				lookup.startScan();
+				return null;
 			}
-		});
-		backBtn.layoutXProperty().bind(primaryStage.widthProperty().multiply(2).divide(3).subtract(backBtn.widthProperty().divide(2)));//button offset to middle and then shifted by half the width
-		backBtn.layoutYProperty().bind(backBtn.heightProperty().add(prevPane.heightProperty().add(prevPane.layoutYProperty())));//the multiply adds the extra vertical offset and the divide is the divide gets it to the right size
-		
-		//run sql & reload button
-		Button FinishedBtn =new Button("Verify");
-		FinishedBtn.setOnAction(new EventHandler<ActionEvent>() { 
-			public void handle(ActionEvent e)
-			{ 
-				//calculate sql and run
-				DbBasic dataBase = getDataBase();
-				for(int i=0;i<updates.size();i++){
-					if(checkboxes.get(i).isSelected())//switch to if check checked
-						switch(updates.get(i).getType()){
-							case UrlUpdate.NORMAL:	//normal update
-							dataBase.runSQL(updates.get(i).getSQLStatement());
-							break;
-							default:				//other unhandled update
-							break;
-						}
-				}
-				dataBase.close();
+		};
+		scan.setOnSucceeded(new EventHandler<WorkerStateEvent>() {
+			@Override
+			public void handle(WorkerStateEvent t)
+			{
+				db.close();
 				
-				//reload scene
-				primaryStage.setScene(oldScene);
-				HandleScan(primaryStage);
+				if(!(updates instanceof ListExpression)){
+					System.out.println("clearing");
+					for(;values<updates.size();values++){//add all aditional values
+						//get update
+						UrlUpdate curUpdate=updates.get(values);
+						prevPane=addScanResult(curUpdate,internalPane,prevPane,checkboxes);
+						internalPane.prefHeightProperty().bind(prevPane.heightProperty().multiply(2).add(prevPane.layoutYProperty()));
+					}
+				}
+				
+				if(updates.size()==0){
+					//tell user no updates found
+				}
+				
+				//back button
+				Button backBtn =new Button("Back");
+				backBtn.setOnAction(new EventHandler<ActionEvent>() { 
+					public void handle(ActionEvent e)
+					{ 
+						primaryStage.setScene(oldScene);
+					}
+				});
+				backBtn.layoutXProperty().bind(primaryStage.widthProperty().multiply(2).divide(3).subtract(backBtn.widthProperty().divide(2)));//button offset to middle and then shifted by half the width
+				backBtn.layoutYProperty().bind(backBtn.heightProperty().add(prevPane.heightProperty().add(prevPane.layoutYProperty())));//the multiply adds the extra vertical offset and the divide is the divide gets it to the right size
+				
+				//run sql & reload button
+				Button FinishedBtn =new Button("Verify");
+				FinishedBtn.setOnAction(new EventHandler<ActionEvent>() { 
+					public void handle(ActionEvent e)
+					{ 
+						//calculate sql and run
+						DbBasic dataBase = getDataBase();
+						for(int i=0;i<updates.size();i++){
+							if(checkboxes.get(i).isSelected())//switch to if check checked
+								switch(updates.get(i).getType()){
+									case UrlUpdate.NORMAL:	//normal update
+									dataBase.runSQL(updates.get(i).getSQLStatement());
+									break;
+									default:				//other unhandled update
+									break;
+								}
+						}
+						dataBase.close();
+						
+						//reload scene
+						primaryStage.setScene(oldScene);
+						HandleScan(primaryStage);
+					}
+				});
+				FinishedBtn.layoutXProperty().bind(primaryStage.widthProperty().divide(3).subtract(FinishedBtn.widthProperty().divide(2)));//button offset to middle and then shifted by half the width
+				FinishedBtn.layoutYProperty().bind(backBtn.layoutYProperty());//the multiply adds the extra vertical offset and the divide is the divide gets it to the right size
+				
+				internalPane.getChildren().addAll(backBtn,FinishedBtn);
+				internalPane.prefHeightProperty().bind(backBtn.heightProperty().multiply(2).add(backBtn.layoutYProperty()));
+				//internalPane.setWidth(sPane.getWidth());
+				internalPane.prefWidthProperty().bind(sPane.widthProperty());
 			}
 		});
-		FinishedBtn.layoutXProperty().bind(primaryStage.widthProperty().divide(3).subtract(FinishedBtn.widthProperty().divide(2)));//button offset to middle and then shifted by half the width
-		FinishedBtn.layoutYProperty().bind(backBtn.layoutYProperty());//the multiply adds the extra vertical offset and the divide is the divide gets it to the right size
-		
-		internalPane.getChildren().addAll(backBtn,FinishedBtn);
-		internalPane.prefHeightProperty().bind(backBtn.heightProperty().multiply(2).add(backBtn.layoutYProperty()));
-		db.close();
-		
+		new Thread(scan).start();
 	}
 	
 	private TitledPane addScanResult(UrlUpdate curUpdate,Pane internalPane, Region prevPane,List checkboxes){
@@ -203,7 +231,7 @@ public class GUI extends Application {
 		
 		//name,url links, check/
 		int urls=0;
-		Button link=null;;
+		Button link=null;
 		if(curUpdate.urls()!=null){
 		for(String website:curUpdate.urls()){
 			//add single url part
@@ -240,11 +268,11 @@ public class GUI extends Application {
 		
 		CheckBox check = new CheckBox();
 		
-		segment.prefWidthProperty().bind(internalPane.widthProperty().subtract(check.widthProperty().multiply(3)));// 7/8 width
-		segment.maxWidthProperty().bind(internalPane.widthProperty().subtract(check.widthProperty().multiply(3)));// 7/8 width
+		segment.prefWidthProperty().bind(internalPane.widthProperty().subtract(check.widthProperty().multiply(2)));// 7/8 width
+		segment.maxWidthProperty().bind(internalPane.widthProperty().subtract(check.widthProperty().multiply(2)));// 7/8 width
 		
-		check.layoutYProperty().bind(segment.layoutYProperty());
-		check.layoutXProperty().bind(internalPane.widthProperty().subtract(check.widthProperty().multiply(2)));
+		check.layoutYProperty().bind(segment.layoutYProperty().add(segment.heightProperty().subtract(check.heightProperty()).divide(2)));
+		check.layoutXProperty().bind(internalPane.widthProperty().subtract(check.widthProperty().multiply(7).divide(4)));
 		checkboxes.add(check);
 		
 		internalPane.getChildren().addAll(segment,check);

@@ -5,6 +5,9 @@ import javax.swing.*;
 import java.util.List;
 import java.util.ArrayList;
 import java.sql.*;
+import javafx.beans.property.SimpleListProperty;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 
 public class UrlLookUp implements IUpdateChecker{
 	private String fileName;
@@ -36,7 +39,8 @@ public class UrlLookUp implements IUpdateChecker{
 		accept=Accept;
 		exclude=Exclude;
 		isDB=false;
-		Updates=new ArrayList<UrlUpdate>();
+		ObservableList<UrlUpdate> observableList = FXCollections.observableArrayList();
+		Updates=new SimpleListProperty(observableList);
 	}
 	
 	public UrlLookUp(DbBasic DataBaseConn){
@@ -44,7 +48,8 @@ public class UrlLookUp implements IUpdateChecker{
 		accept="=\"back";
 		exclude="=\"clearfix";
 		isDB=true;
-		Updates=new ArrayList<UrlUpdate>();
+		ObservableList<UrlUpdate> observableList = FXCollections.observableArrayList();
+		Updates=new SimpleListProperty(observableList);
 	}
 	
 	private void waitForResult(int id){
@@ -239,15 +244,15 @@ public class UrlLookUp implements IUpdateChecker{
 	// update GUI
 	private void GUIUpdate(){
 		for(int j=0;j<maxThreads;j++){
-			if(lookups[j%maxThreads]==null||!lookups[j%maxThreads].isAlive())
-				if(current.charAt(j%maxThreads+1)=='#'){
+			if(lookups[j]==null||!lookups[j].isAlive())
+				if(current.charAt(j+1)=='#'){
 					total.setCharAt(finished--,'=');
-					current.setCharAt(j%maxThreads+1,'=');
+					current.setCharAt(j+1,'=');
 				}
 			else{
-				if(current.charAt(j%maxThreads+1)=='='){
+				if(current.charAt(j+1)=='='){
 					total.setCharAt(++finished,'#');
-					current.setCharAt(j%maxThreads+1,'#');
+					current.setCharAt(j+1,'#');
 				}
 			}
 		}
