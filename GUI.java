@@ -67,9 +67,9 @@ public class GUI extends Application {
 		addBtn.setOnAction(new EventHandler<ActionEvent>() { 
 			public void handle(ActionEvent e) 
 			{ 
-				addBtn.setText("Not Done");
-				addBtn.setDisable(true);
 				System.out.println("Going to Add!\n beep beep!");
+				AddGUI add = new AddGUI(primaryStage);
+				add.HandleAddMenu();
 			}
 		});
 		

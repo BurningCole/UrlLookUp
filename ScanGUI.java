@@ -112,7 +112,7 @@ public class ScanGUI{
 				backBtn.layoutYProperty().bind(backBtn.heightProperty().add(prevPane.heightProperty().add(prevPane.layoutYProperty())));//the multiply adds the extra vertical offset and the divide is the divide gets it to the right size
 				
 				//run sql & reload button
-				Button FinishedBtn =new Button("Verify");
+				Button FinishedBtn =new Button("mark+refresh");
 				FinishedBtn.setOnAction(HandleRescan);
 				FinishedBtn.layoutXProperty().bind(primaryStage.widthProperty().divide(3).subtract(FinishedBtn.widthProperty().divide(2)));//button offset to middle and then shifted by half the width
 				FinishedBtn.layoutYProperty().bind(backBtn.layoutYProperty());//the multiply adds the extra vertical offset and the divide is the divide gets it to the right size
