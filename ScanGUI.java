@@ -14,6 +14,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.control.TitledPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
+import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 
 import java.sql.*;
@@ -174,8 +175,11 @@ public class ScanGUI{
 		//name,url links, check/
 		int urls=0;
 		Button link=null;
+		
+		Color segColour=Color.RED;
 		if(curUpdate.urls()!=null&&curUpdate.getType()==UrlUpdate.NORMAL){
 			for(String website:curUpdate.urls()){
+				segColour=Color.MIDNIGHTBLUE;
 				//add single url part
 				link = new Button(website);
 				link.prefWidthProperty().bind(segPane.widthProperty());
@@ -202,42 +206,42 @@ public class ScanGUI{
 			}
 			if(link!=null)
 			segPane.prefHeightProperty().bind(link.heightProperty().multiply(urls));
-		}else
-			if(curUpdate.getType()==UrlUpdate.MISSING_EXCLUDE){
-				TextField urlEditField = new TextField(curUpdate.getUrl());
-				urlEditField.prefWidthProperty().bind(segPane.widthProperty());
-				urlEditField.maxWidthProperty().bind(segPane.widthProperty());
-				urlEditField.textProperty().addListener(new ChangeListener<String>() {
-					@Override
-					public void changed(final ObservableValue<? extends String> observable, final String oldValue, final String newValue) {
-						curUpdate.urls().clear();
-						DbBasic db = GUI.getDataBase();
-						ResultSet rs=db.doQuery("SELECT url,webId FROM websites");
-						try{
-							while(rs.next()){
-								if(newValue.startsWith(rs.getString("url"))){
-									String newUrl=newValue.substring(
-										rs.getString("url").length()
-									);
-									if(!curUpdate.getUrl().startsWith(rs.getString("url")))
-										curUpdate.urls().add("webId = "+rs.getString("webId")+" ");
-									if(!curUpdate.getUrl().endsWith(newUrl))
-										curUpdate.urls().add("URL = '"+newUrl+"' ");
-									break;
-								}
+		}else if(curUpdate.getType()==UrlUpdate.MISSING_EXCLUDE){
+			segColour=Color.CRIMSON;
+			TextField urlEditField = new TextField(curUpdate.getUrl());
+			urlEditField.prefWidthProperty().bind(segPane.widthProperty());
+			urlEditField.maxWidthProperty().bind(segPane.widthProperty());
+			urlEditField.textProperty().addListener(new ChangeListener<String>() {
+				@Override
+				public void changed(final ObservableValue<? extends String> observable, final String oldValue, final String newValue) {
+					curUpdate.urls().clear();
+					DbBasic db = GUI.getDataBase();
+					ResultSet rs=db.doQuery("SELECT url,webId FROM websites");
+					try{
+						while(rs.next()){
+							if(newValue.startsWith(rs.getString("url"))){
+								String newUrl=newValue.substring(
+									rs.getString("url").length()
+								);
+								if(!curUpdate.getUrl().startsWith(rs.getString("url")))
+									curUpdate.urls().add("webId = "+rs.getString("webId")+" ");
+								if(!curUpdate.getUrl().endsWith(newUrl))
+									curUpdate.urls().add("URL = '"+newUrl+"' ");
+								break;
 							}
-						}catch(SQLException e){
-							e.printStackTrace();
 						}
-						db.close();
+					}catch(SQLException e){
+						e.printStackTrace();
 					}
-				});
-				
-				segPane.getChildren().add(urlEditField);
-				segPane.prefHeightProperty().bind(urlEditField.heightProperty());
-				
-			}
+					db.close();
+				}
+			});
+			
+			segPane.getChildren().add(urlEditField);
+			segPane.prefHeightProperty().bind(urlEditField.heightProperty());
+		}
 		TitledPane segment=new TitledPane(curUpdate.name(),segPane);
+		segment.setTextFill(segColour);
 		segment.layoutYProperty().bind(prevPane.layoutYProperty().add(prevPane.heightProperty()));
 		segment.setExpanded(false);
 		prevPane=segment;

@@ -11,6 +11,8 @@ import javafx.scene.layout.Region;
 import javafx.stage.Stage;
 
 import java.sql.*;
+import java.util.Date;
+import java.text.SimpleDateFormat;
 
 public class AddGUI{
 	
@@ -74,13 +76,14 @@ public class AddGUI{
 			if(aliasEditField.getText().length()==0||urlEditField.getText().length()==0)
 				return;//return if values not put in
 			//add
-			String sql = "INSERT INTO urls(alias,webId,url) VALUES (\"<Alias>\",<WebId>,\"<Url>\");";
+			String sql = "INSERT INTO urls(alias,webId,url,updated) VALUES (\"<Alias>\",<WebId>,\"<Url>\",\"<Date>\");";
 			DbBasic dataBase = GUI.getDataBase();
 			String url=urlEditField.getText();
 			String usedUrl="";
 			int webId=0;
 			ResultSet rs=dataBase.doQuery("SELECT url,webId FROM websites");
 			try{
+				SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd");
 				while(rs.next()){
 					if(url.startsWith(rs.getString("url"))){
 						webId = rs.getInt("webId");
@@ -91,10 +94,12 @@ public class AddGUI{
 					}
 				}
 				rs.close();
+				
 				if(usedUrl.length()>0){
 					sql=sql.replace("<Alias>",prepArg(aliasEditField.getText()));
 					sql=sql.replace("<WebId>",String.valueOf(webId));
 					sql=sql.replace("<Url>",prepArg(usedUrl));
+					sql=sql.replace("<Date>",DATE_FORMAT.format(new Date()));
 					dataBase.runSQL(sql);
 					//System.out.println(sql);
 					urlEditField.setText("");

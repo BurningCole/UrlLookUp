@@ -1,4 +1,6 @@
 import java.util.List;
+import java.util.Date;
+import java.text.SimpleDateFormat;
 
 public class UrlUpdate{
 	
@@ -22,11 +24,12 @@ public class UrlUpdate{
 		this.name=Name;
 	}
 	public String getSQLStatement(){
+		SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd");
 		switch(type){
 			case NORMAL:
-				return "UPDATE urls SET url='"+urlSubPart+"' WHERE id = "+ID+";";
+				return "UPDATE urls SET url='"+urlSubPart+"', updated='"+DATE_FORMAT.format(new Date())+"' WHERE id = "+ID+";";
 			case MISSING_EXCLUDE:
-				return "UPDATE urls SET ^ WHERE id = "+ID+";";
+				return "UPDATE urls SET ^, updated='"+DATE_FORMAT.format(new Date())+"' WHERE id = "+ID+";";
 			default:
 				return "--OTHER ERROR";
 		}
