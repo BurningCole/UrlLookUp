@@ -155,7 +155,7 @@ public class UrlLookUp implements IUpdateChecker{
 			BufferedReader br=null;
 			ResultSet rs=null;
 			if(isDB){
-				rs=db.doQuery("SELECT urls.id, websites.url, urls.url, urls.alias, websites.accept, websites.exclude FROM urls INNER JOIN websites ON urls.webId=websites.webId");
+				rs=db.doQuery("SELECT urls.id, websites.url, urls.url, urls.alias, websites.accept, websites.exclude FROM urls INNER JOIN websites ON urls.webId=websites.webId ORDER BY updated");
 			}else{
 				br = new BufferedReader(new FileReader(fileName));
 			}
