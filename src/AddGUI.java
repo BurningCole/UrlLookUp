@@ -94,7 +94,11 @@ public class AddGUI{
 					}
 				}
 				rs.close();
-				
+				if(usedUrl.length()==0){
+					//open host adder
+					new hostAdder(primaryStage).HandleAddMenu(url);
+					return;
+				}
 				if(usedUrl.length()>0){
 					sql=sql.replace("<Alias>",prepArg(aliasEditField.getText()));
 					sql=sql.replace("<WebId>",String.valueOf(webId));
