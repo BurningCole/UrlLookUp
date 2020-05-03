@@ -95,6 +95,7 @@ public class hostAdder{
 			dataBase.runSQL(sql);
 			//System.out.println(sql);
 			dataBase.close();
+			GUI.logInfo("Website: "+url+" added");
 		}
 	};
 	

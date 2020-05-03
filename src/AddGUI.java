@@ -79,6 +79,7 @@ public class AddGUI{
 			String sql = "INSERT INTO urls(alias,webId,url,updated) VALUES (\"<Alias>\",<WebId>,\"<Url>\",\"<Date>\");";
 			DbBasic dataBase = GUI.getDataBase();
 			String url=urlEditField.getText();
+			GUI.logInfo("Adding url: "+url);
 			String usedUrl="";
 			int webId=0;
 			ResultSet rs=dataBase.doQuery("SELECT url,webId FROM websites");
@@ -96,6 +97,7 @@ public class AddGUI{
 				rs.close();
 				if(usedUrl.length()==0){
 					//open host adder
+					GUI.logInfo("Unknown url");
 					new hostAdder(primaryStage).HandleAddMenu(url);
 					return;
 				}

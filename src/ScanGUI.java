@@ -78,6 +78,7 @@ public class ScanGUI{
 		Task<Void> scan = new Task<Void>(){
 			@Override 
 			public Void call() throws InterruptedException {
+				GUI.logInfo("Scan Started");
 				lookup.startScan();
 				return null;
 			}
@@ -86,6 +87,7 @@ public class ScanGUI{
 			@Override
 			public void handle(WorkerStateEvent t)
 			{
+				GUI.logInfo("Scan Finished");
 				db.close();
 				
 				if(!(updates instanceof ListExpression)){
@@ -100,6 +102,7 @@ public class ScanGUI{
 				if(updates.size()==0){
 					//tell user no updates found
 				}
+				GUI.logInfo("Found "+updates.size()+" updates/changes");
 				
 				//back button
 				Button backBtn =new Button("Back");
@@ -134,7 +137,8 @@ public class ScanGUI{
 			//calculate sql and run
 			DbBasic dataBase = GUI.getDataBase();
 			for(int i=0;i<updates.size();i++){
-				if(checkboxes.get(i).isSelected())//switch to if check checked
+				if(checkboxes.get(i).isSelected()){//switch to if check checked
+					GUI.logInfo("Update: "+updates.get(i).name());
 					switch(updates.get(i).getType()){
 						case UrlUpdate.NORMAL:	//normal update
 							dataBase.runSQL(updates.get(i).getSQLStatement());
@@ -154,11 +158,14 @@ public class ScanGUI{
 								dataBase.runSQL(
 									SQLUpdate
 								);
+								
 							}
 							break;
 						default:				//other unhandled update
+							GUI.logInfo("Unimplemented update type: "+updates.get(i).getType());
 							break;
 					}
+				}
 			}
 			dataBase.close();
 			

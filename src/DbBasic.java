@@ -1,5 +1,6 @@
 import java.sql.*;
 import java.io.File;
+import java.util.logging.Logger;
 
 public class DbBasic {
 
@@ -33,6 +34,7 @@ public class DbBasic {
 	public void notify( String message, Exception e ) {
 		System.out.println( message + " : " + e );
 		e.printStackTrace ( );
+		GUI.getLogger().severe(message + " : " + e);
 		System.exit( 0 );
 	}
 	
@@ -49,6 +51,7 @@ public class DbBasic {
 				 "SQLite database file ["
 				+ dbName
 				+ "] does not exist");
+			GUI.getLogger().severe("DB does not exist");
 			System.exit( 0 );
 		}
 	

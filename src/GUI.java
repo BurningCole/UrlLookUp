@@ -6,6 +6,11 @@ import javafx.scene.control.Button;
 import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
 
+import java.util.logging.*;
+import java.util.logging.Logger;
+import java.util.logging.FileHandler;
+import java.util.logging.SimpleFormatter;
+
 import java.sql.*;
 
 public class GUI extends Application {
@@ -93,16 +98,21 @@ public class GUI extends Application {
 		//set stage scene to new scene
 		primaryStage.setScene(scene);
 	}
-
+	private static String DataFileLoc = null;
 	
 	private static String getDataFileLoc(){
+		if(DataFileLoc!=null)
+			return DataFileLoc;
 		//find update file
 		Class<?> c = UrlLookUp.class;
 		//remove unnesasary parts of string that are returned
-		String fileLoc=c.getProtectionDomain().getCodeSource().getLocation().toString().replace("file:","");
+		String fileLoc=c.getProtectionDomain().getCodeSource().getLocation().toString();
+		fileLoc=fileLoc.replace("file:/","");
+		fileLoc=fileLoc.replace("file:","");
 		fileLoc=fileLoc.replace("UrlLookUp.jar","");
 		//add data folder to location
 		fileLoc=fileLoc+"data/";
+		DataFileLoc = fileLoc;
 		return fileLoc;
 	}
 	
@@ -118,5 +128,38 @@ public class GUI extends Application {
 	
 	public static void main(String[] args) {
 		launch(args);
+	}
+
+	private static Logger logger = null;
+	private static FileHandler fh;   
+	 
+	
+	private static Logger loadLogger(){
+		if(logger!=null)
+			return logger;
+		try{
+			logger = Logger.getLogger("Primary");
+			fh = new FileHandler(getDataFileLoc()+"logFile.log");  
+			fh.setFormatter(new SimpleFormatter());		
+			logger.addHandler(fh);
+		}catch(Exception e){
+			System.out.println("loggerError\n"+getDataFileLoc());
+			e.printStackTrace();
+			System.exit(0);
+		}
+		logger.info("logger Started: "+getDataFileLoc()+"logFile.log");
+		return logger;
+	}
+	
+	public static Logger getLogger(){
+		if(logger==null)
+			loadLogger();
+		return logger;
+	}
+	
+	public static void logInfo(String log){
+		if(logger==null)
+			loadLogger();
+		logger.info(log);
 	}
 }

@@ -155,9 +155,8 @@ public class UrlLookUpLine implements Runnable{
 				return;
 			}
 			System.out.println("Error accsessing:\n"+url);
-			urlMem.add("Error: "+url+" IO error...\n");
-			hasUpdate=-3;
-			e.printStackTrace();
+			urlMem.add("Error: "+url+" IO error...(possibly 404 response)\n");
+			hasUpdate=-1;
 		}
 	}
 }
