@@ -24,7 +24,7 @@ import java.util.ArrayList;
 public class ScanGUI{
 	int values=0;
 	Region prevPane;
-	ArrayList<CheckBox> checkboxes = new ArrayList<CheckBox>();
+	ArrayList<ScanStruct> results = new ArrayList<ScanStruct>();
 	List<UrlUpdate> updates;
 	Stage primaryStage;
 	Scene oldScene;
@@ -66,7 +66,7 @@ public class ScanGUI{
 						Platform.runLater(new Runnable() {
 							@Override
 							public void run() {
-								prevPane=addScanResult(curUpdate,internalPane,prevPane,checkboxes);
+								prevPane=addScanResult(curUpdate,internalPane,prevPane,results);
 							}
 						});
 					}
@@ -94,7 +94,7 @@ public class ScanGUI{
 					for(;values<updates.size();values++){//add all aditional values
 						//get update
 						UrlUpdate curUpdate=updates.get(values);
-						prevPane=addScanResult(curUpdate,internalPane,prevPane,checkboxes);
+						prevPane=addScanResult(curUpdate,internalPane,prevPane,results);
 						internalPane.prefHeightProperty().bind(prevPane.heightProperty().multiply(2).add(prevPane.layoutYProperty()));
 					}
 				}
@@ -102,7 +102,7 @@ public class ScanGUI{
 				if(updates.size()==0){
 					//tell user no updates found
 				}
-				GUI.logInfo("Found "+updates.size()+" updates/changes");
+				GUI.logInfo("Found "+updates.size()+" updates/changes/errors");
 				
 				//back button
 				Button backBtn =new Button("Back");
@@ -137,16 +137,17 @@ public class ScanGUI{
 			//calculate sql and run
 			DbBasic dataBase = GUI.getDataBase();
 			for(int i=0;i<updates.size();i++){
-				if(checkboxes.get(i).isSelected()){//switch to if check checked
-					GUI.logInfo("Update: "+updates.get(i).name());
-					switch(updates.get(i).getType()){
+				if(results.get(i).getChecked()){//switch to if check checked
+					UrlUpdate update=results.get(i).getUpdate();
+					GUI.logInfo("Update: "+update.name());
+					switch(update.getType()){
 						case UrlUpdate.NORMAL:	//normal update
-							dataBase.runSQL(updates.get(i).getSQLStatement());
+							dataBase.runSQL(update.getSQLStatement());
 							break;
 						case UrlUpdate.MISSING_EXCLUDE:
-							if(updates.get(i).urls().size()!=0){
-								String SQLUpdate=updates.get(i).getSQLStatement();
-								List<String> data =updates.get(i).urls();
+							if(update.urls().size()!=0){
+								String SQLUpdate=update.getSQLStatement();
+								List<String> data =update.urls();
 								String change="";
 								for(int j=0;j<data.size();j++){
 									if(j>0){
@@ -162,7 +163,7 @@ public class ScanGUI{
 							}
 							break;
 						default:				//other unhandled update
-							GUI.logInfo("Unimplemented update type: "+updates.get(i).getType());
+							GUI.logInfo("Unimplemented update type: "+update.getType());
 							break;
 					}
 				}
@@ -173,8 +174,28 @@ public class ScanGUI{
 			HandleScan();
 		}
 	};
+	private class ScanStruct{
+		TitledPane pane;
+		CheckBox checkbox;
+		UrlUpdate update;
+		
+		public ScanStruct(TitledPane p,CheckBox c, UrlUpdate u){
+			pane=p;
+			checkbox=c;
+			update=u;
+		}
+		public TitledPane getTitledPane(){
+			return pane;
+		}
+		public boolean getChecked(){
+			return checkbox.isSelected();
+		}
+		public UrlUpdate getUpdate(){
+			return update;
+		}
+	}
 	
-	private TitledPane addScanResult(UrlUpdate curUpdate,Pane internalPane, Region prevPane,List checkboxes){
+	private TitledPane addScanResult(UrlUpdate curUpdate,Pane internalPane, Region prevPane,List results){
 		//add new segment
 		Pane segPane = new Pane();//pane to put url labels in
 		
@@ -263,7 +284,8 @@ public class ScanGUI{
 		
 		check.layoutYProperty().bind(segment.layoutYProperty().add(segment.heightProperty().subtract(check.heightProperty()).divide(2)));
 		check.layoutXProperty().bind(internalPane.widthProperty().subtract(check.widthProperty().multiply(7).divide(4)));
-		checkboxes.add(check);
+		
+		results.add(new ScanStruct(segment,check,curUpdate));
 		
 		internalPane.getChildren().addAll(segment,check);
 		return segment;
