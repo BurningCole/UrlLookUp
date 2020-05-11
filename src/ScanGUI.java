@@ -55,6 +55,7 @@ public class ScanGUI{
 		internalPane.prefWidthProperty().bind(sPane.widthProperty());
 		
 		//create lookup
+		results.clear();
 		IUpdateChecker lookup=new UrlLookUp(db);
 		
 		updates=lookup.getResults();
@@ -145,25 +146,43 @@ public class ScanGUI{
 							dataBase.runSQL(update.getSQLStatement());
 							break;
 						case UrlUpdate.MISSING_EXCLUDE:
-							if(update.urls().size()!=0){
-								String SQLUpdate=update.getSQLStatement();
-								List<String> data =update.urls();
-								String change="";
-								for(int j=0;j<data.size();j++){
-									if(j>0){
-										change+=",";
+							ResultSet rs=dataBase.doQuery("SELECT url,webId FROM websites");
+							String SQLUpdate=update.getSQLStatement();
+							int website=-1;
+							String url="";
+							try{
+								while(rs.next()){
+									if(update.getUrl().startsWith(rs.getString("url"))){
+										url=update.getUrl().substring(
+											rs.getString("url").length()
+										);
+										website=rs.getInt("webId");
+										break;
 									}
-									change+=data.get(j);
 								}
+								if(website==-1){
+									GUI.logInfo("Unknown url: "+url);
+									//new hostAdder(primaryStage).HandleAddMenu(url);
+								}
+							}catch(SQLException ex){
+								ex.printStackTrace();
+								GUI.getLogger().warning("SQL error on "+url+"SELECT url,webId FROM websites");
+							}
+							
+							if(website!=-1){
+								String change="webId = "+website+",URL = '"+url+"' ";
 								SQLUpdate = SQLUpdate.replace("^",change);
 								dataBase.runSQL(
 									SQLUpdate
 								);
 								
+							}else{
+								GUI.getLogger().warning("Update failed "+update.getUrl());
 							}
 							break;
 						default:				//other unhandled update
-							GUI.logInfo("Unimplemented update type: "+update.getType());
+							GUI.logInfo("Unimplemented update type id: "+update.getType());
+							GUI.getLogger().warning("Update failed "+update.getUrl());
 							break;
 					}
 				}
@@ -242,26 +261,7 @@ public class ScanGUI{
 			urlEditField.textProperty().addListener(new ChangeListener<String>() {
 				@Override
 				public void changed(final ObservableValue<? extends String> observable, final String oldValue, final String newValue) {
-					curUpdate.urls().clear();
-					DbBasic db = GUI.getDataBase();
-					ResultSet rs=db.doQuery("SELECT url,webId FROM websites");
-					try{
-						while(rs.next()){
-							if(newValue.startsWith(rs.getString("url"))){
-								String newUrl=newValue.substring(
-									rs.getString("url").length()
-								);
-								if(!curUpdate.getUrl().startsWith(rs.getString("url")))
-									curUpdate.urls().add("webId = "+rs.getString("webId")+" ");
-								if(!curUpdate.getUrl().endsWith(newUrl))
-									curUpdate.urls().add("URL = '"+newUrl+"' ");
-								break;
-							}
-						}
-					}catch(SQLException e){
-						e.printStackTrace();
-					}
-					db.close();
+					curUpdate.setUrl(newValue);
 				}
 			});
 			

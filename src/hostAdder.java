@@ -30,7 +30,7 @@ public class hostAdder{
 	
 	public void HandleAddMenu(String baseUrl){
 		
-		Label url= new Label("Insert Entire URL");
+		Label url= new Label("Insert Website Segment of "+baseUrl);
 		Label accept=new Label("Insert class/tag of next chapter links on webpage");
 		Label exclude=new Label("Insert html on valid webpage (not missing chapter page)");
 		
@@ -59,7 +59,7 @@ public class hostAdder{
 		excludeEditField.layoutYProperty().bind(exclude.layoutYProperty().add(exclude.heightProperty()));
 		
 		//back button
-		Button backBtn =new Button("Back");
+		Button backBtn =new Button("Cancel");
 		backBtn.setOnAction(new EventHandler<ActionEvent>() { 
 			public void handle(ActionEvent e)
 			{ 
