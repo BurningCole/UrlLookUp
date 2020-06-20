@@ -14,5 +14,8 @@ jar:
 run:
 	$(JAVAC) -cp $(LIB_DIR)/*;$(OUT_DIR) Main
 	
+clean:	
+	del /f /s $(OUT_DIR)/*.class
+	
 opendb:
 	$(LIB_DIR)/sqlite3.exe data/Urls.db

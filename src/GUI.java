@@ -81,9 +81,9 @@ public class GUI extends Application {
 		removeBtn.setOnAction(new EventHandler<ActionEvent>() { 
 			public void handle(ActionEvent e) 
 			{ 
-				removeBtn.setText("Not Done");
-				removeBtn.setDisable(true);
 				System.out.println("Going to Remove!\n beep beep!");
+				UpdateGUI update= new UpdateGUI(primaryStage);
+				update.HandleScan();
 			} 
 		});
 		
@@ -109,6 +109,7 @@ public class GUI extends Application {
 		String fileLoc=c.getProtectionDomain().getCodeSource().getLocation().toString();
 		fileLoc=fileLoc.replace("file:/","");
 		fileLoc=fileLoc.replace("file:","");
+		fileLoc=fileLoc.replace("out/","");
 		fileLoc=fileLoc.replace("UrlLookUp.jar","");
 		//add data folder to location
 		fileLoc=fileLoc+"data/";

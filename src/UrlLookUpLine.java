@@ -28,6 +28,7 @@ public class UrlLookUpLine implements Runnable{
 	* returns 1 if the accept string was found on website,
 	* returns 0 if the accept string was not found on website,
 	* returns -1 if an error was encounted
+	* returns -2 if error occurs with socket
 	*/
 	public int result(){
 		return hasUpdate;

@@ -193,6 +193,7 @@ public class ScanGUI{
 			HandleScan();
 		}
 	};
+
 	private class ScanStruct{
 		TitledPane pane;
 		CheckBox checkbox;
