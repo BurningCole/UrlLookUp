@@ -12,7 +12,7 @@ jar:
 	jar cfm UrlLookUp.jar Manifest.txt -C $(OUT_DIR) .	
 	
 run:
-	$(JAVAC) -cp $(LIB_DIR)/*;$(OUT_DIR) Main
+	java -cp $(LIB_DIR)/*;$(OUT_DIR) Main
 	
 clean:	
 	del /f /s $(OUT_DIR)/*.class
