@@ -205,6 +205,8 @@ public class UpdateGUI{
 			DbBasic database = GUI.getDataBase();
 			database.runSQL(getUpdateSQL());
 			database.close();
+			GUI.getLogger().info("Updated: "+alias);
+			changes=NONE;
 		}
 		
 		public void delete(){
@@ -212,6 +214,7 @@ public class UpdateGUI{
 			DbBasic database = GUI.getDataBase();
 			database.runSQL("DELETE FROM urls WHERE id = "+id);
 			database.close();
+			GUI.getLogger().info("Deleted: "+alias);
 		}
 		
 		public String getUpdateSQL(){
@@ -304,20 +307,42 @@ public class UpdateGUI{
 				public void handle(ActionEvent e)
 				{ 
 					newSite.update();
+					UpdateBtn.setDisable(true);
 				}
 			});
-			UpdateBtn.layoutXProperty().bind(segPane.widthProperty().divide(7));//button offset to middle and then shifted by half the width
+			UpdateBtn.layoutXProperty().bind(segPane.widthProperty().divide(13));//button offset to middle and then shifted by half the width
 			UpdateBtn.layoutYProperty().bind(urlEditField.layoutYProperty().add(urlEditField.heightProperty().multiply(3).divide(2)));//the multiply adds the extra vertical offset and the divide is the divide gets it to the right size
-			UpdateBtn.prefWidthProperty().bind(segPane.widthProperty().divide(7).multiply(2));
+			UpdateBtn.prefWidthProperty().bind(segPane.widthProperty().multiply(3).divide(13));
+			UpdateBtn.setDisable(true);
+			
+			Button LinkBtn =new Button("Link");
+			LinkBtn.setOnAction(new EventHandler<ActionEvent>() { 
+				public void handle(ActionEvent e)
+				{ 
+					try{
+						java.awt.Desktop.getDesktop().browse(new java.net.URI(newSite.getUrl()));
+					}catch(Exception ex){
+						GUI.getLogger().warning("website \""+newSite.getUrl()+"\" conection error");
+					}
+					
+				}
+			});
+			LinkBtn.layoutXProperty().bind(segPane.widthProperty().multiply(5).divide(13));//button offset to middle and then shifted by half the width
+			LinkBtn.layoutYProperty().bind(UpdateBtn.layoutYProperty());//the multiply adds the extra vertical offset and the divide is the divide gets it to the right size
+			LinkBtn.prefWidthProperty().bind(UpdateBtn.widthProperty());
 			
 			Button RemoveBtn =new Button("Remove Value");
 			RemoveBtn.setOnAction(new EventHandler<ActionEvent>() { 
 				public void handle(ActionEvent e)
 				{ 
 					newSite.delete();
+					segment.setExpanded(false);
+					segment.setCollapsible(false);
+					segment.setText("DELETED");
+					
 				}
 			});
-			RemoveBtn.layoutXProperty().bind(segPane.widthProperty().divide(7).multiply(4));//button offset to middle and then shifted by half the width
+			RemoveBtn.layoutXProperty().bind(segPane.widthProperty().multiply(9).divide(13));//button offset to middle and then shifted by half the width
 			RemoveBtn.layoutYProperty().bind(UpdateBtn.layoutYProperty());//the multiply adds the extra vertical offset and the divide is the divide gets it to the right size
 			RemoveBtn.prefWidthProperty().bind(UpdateBtn.widthProperty());
 			
@@ -328,6 +353,7 @@ public class UpdateGUI{
 				@Override
 				public void changed(final ObservableValue<? extends String> observable, final String oldValue, final String newValue) {
 					newSite.changeAlias(newValue);
+					UpdateBtn.setDisable(false);
 				}
 			});
 			segPane.getChildren().add(alias);
@@ -338,6 +364,7 @@ public class UpdateGUI{
 				@Override
 				public void changed(final ObservableValue<? extends String> observable, final String oldValue, final String newValue) {
 					newSite.changeURL(newValue);
+					UpdateBtn.setDisable(false);
 				}
 			});
 			segPane.getChildren().add(url);
@@ -351,6 +378,7 @@ public class UpdateGUI{
 			
 			segPane.getChildren().add(UpdateBtn);
 			segPane.getChildren().add(RemoveBtn);
+			segPane.getChildren().add(LinkBtn);
 			
 			segPane.prefHeightProperty().bind(RemoveBtn.layoutYProperty().add(RemoveBtn.heightProperty().multiply(3).divide(2)));
 			

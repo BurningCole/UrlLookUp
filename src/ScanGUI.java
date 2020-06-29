@@ -236,8 +236,8 @@ public class ScanGUI{
 				link.setOnAction(new EventHandler<ActionEvent>() { 
 					public void handle(ActionEvent e)
 					{ 
+						String finalWebsite="Unknown";
 						try{
-							String finalWebsite;
 							if(!(website.startsWith("http")||website.startsWith("Http"))){
 								finalWebsite="http://"+website;
 							}else{
@@ -246,6 +246,7 @@ public class ScanGUI{
 						java.awt.Desktop.getDesktop().browse(new java.net.URI(finalWebsite));
 						}catch(Exception ex){
 							System.out.println("Error");
+							GUI.getLogger().warning("website \""+finalWebsite+"\" conection error");
 						}
 					}
 				});
