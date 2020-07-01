@@ -52,21 +52,11 @@ public class UrlLookUp implements IUpdateChecker{
 		Updates=new SimpleListProperty(observableList);
 	}
 	
-	private void waitForResult(int id){
-		boolean waited=false;
-		while(lookups[id%maxThreads].isAlive()){
-			try{
-				waited=true;
-				lookups[id%maxThreads].join(1000);
-				GUIUpdate();
-			}catch(InterruptedException e){
-				System.out.println("Thread joining error");
-			}
-		}
-		//get result
+	private void addResult(int id){
 		int result=Line[id%maxThreads].result();
 		//if success
-			switch(result){
+		UrlUpdate update;
+		switch(result){
 			case 1:
 				ArrayList<String> urls = Line[id%maxThreads].getAllUrls();
 				
@@ -82,9 +72,9 @@ public class UrlLookUp implements IUpdateChecker{
 							break;
 						}
 					}
-					UrlUpdate update=new UrlUpdate(
+					update=new UrlUpdate(
 						actualIDs[id%maxThreads],	//id of website
-						UrlUpdate.NORMAL,				//type
+						UrlUpdate.NORMAL,			//type
 						urls,						//all update urls
 						newUrl,						//new url part
 						names[id%maxThreads]		//url name reference
@@ -98,23 +88,72 @@ public class UrlLookUp implements IUpdateChecker{
 			//if error
 			case -1:
 				
-				UrlUpdate update=new UrlUpdate(
-					actualIDs[id%maxThreads],	//id of website
+				update=new UrlUpdate(
+					actualIDs[id%maxThreads],		//id of website
 					UrlUpdate.MISSING_EXCLUDE,		//type
-					new ArrayList<String>(),						//all update urls
-					Line[id%maxThreads].getUrl(),						//new url part
-					names[id%maxThreads]		//url name reference
+					new ArrayList<String>(),		//all update urls
+					Line[id%maxThreads].getUrl(),	//new url part
+					names[id%maxThreads]			//url name reference
 				);
 				Updates.add(update);
 				
 				break;
 			case -2:
+				update=new UrlUpdate(
+					actualIDs[id%maxThreads],		//id of website
+					UrlUpdate.SOCK_ERROR,			//type
+					new ArrayList<String>(),		//all update urls
+					Line[id%maxThreads].getUrl(),	//new url part
+					names[id%maxThreads]			//url name reference
+				);
+				Updates.add(update);
 				
 				break;
 			case -3:
-				
+				update=new UrlUpdate(
+					actualIDs[id%maxThreads],		//id of website
+					UrlUpdate.READ_ERROR,			//type
+					new ArrayList<String>(),		//all update urls
+					Line[id%maxThreads].getUrl(),	//new url part
+					names[id%maxThreads]			//url name reference
+				);
+				Updates.add(update);
 				break;
+		}
+	}
+	
+	private int waitForResult(){
+		int id=0;
+		while(lookups[id]!=null&&lookups[id].isAlive()){
+			
+			id++;
+			if(id>=maxThreads){
+				try{
+					Thread.sleep(250);
+				}catch(InterruptedException e){
+					
+				}
+				id=0;
 			}
+		}
+		addResult(id);
+		GUIUpdate();
+		return id;
+	}
+	
+	private void waitForResult(int id){
+		boolean waited=false;
+		while(lookups[id%maxThreads].isAlive()){
+			try{
+				waited=true;
+				lookups[id%maxThreads].join(250);
+				GUIUpdate();
+			}catch(InterruptedException e){
+				System.out.println("Thread joining error");
+			}
+		}
+		//get result
+		addResult(id);
 	}
 	
 	/**
@@ -167,23 +206,19 @@ public class UrlLookUp implements IUpdateChecker{
 				try{
 				while(rs.next()){
 					if(read>=maxThreads){
-						//if no lookup in space
-						if(lookups[read%maxThreads]==null){
-							System.out.println("Line: "+(read+1)+" not a correct format");
-						}else{
-							waitForResult(i);
-						}
-						i++;
+						i=waitForResult();
+					}else{
+						i=read;
 					}
 					//get next url
-					names[read%maxThreads]=rs.getString(4);
+					names[i]=rs.getString(4);
 					String url=rs.getString(2)+rs.getString(3);
 					//create lookup for line
-					Line[read%maxThreads]=new UrlLookUpLine(url,rs.getString(5),rs.getString(6));
-					lookups[read%maxThreads]=new Thread(Line[read%maxThreads]);
-					actualIDs[read%maxThreads]=rs.getInt(1);
+					Line[i]=new UrlLookUpLine(url,rs.getString(5),rs.getString(6));
+					lookups[i]=new Thread(Line[i%maxThreads]);
+					actualIDs[i]=rs.getInt(1);
 					//start lookup
-					lookups[read%maxThreads].start();
+					lookups[i].start();
 					//update swing gui
 					GUIUpdate();
 					read++;
@@ -197,40 +232,33 @@ public class UrlLookUp implements IUpdateChecker{
 				
 				//if thread array capacity reached
 				if(read>=maxThreads){
-					//if no lookup in space
-					if(lookups[read%maxThreads]==null){
-						System.out.println("Line: "+(read+1)+" not a correct format");
-					}else{
-						waitForResult(i);
-					}
-					i++;
+					i=waitForResult();
+				}else{
+					i=read;
 				}
 				//get next url
 				String[] lineSplit=line.split(">");
-				names[read%maxThreads]=lineSplit[0];
-				actualIDs[read%maxThreads]=read;
+				names[i]=lineSplit[0];
+				actualIDs[i]=read;
 				if(lineSplit.length!=2){
 					continue;
 				}
 				//create lookup for line
-				Line[read%maxThreads]=new UrlLookUpLine(lineSplit[1],accept,exclude);
-				lookups[read%maxThreads]=new Thread(Line[read%maxThreads]);
+				Line[i]=new UrlLookUpLine(lineSplit[1],accept,exclude);
+				lookups[i]=new Thread(Line[read%maxThreads]);
 				//start lookup
-				lookups[read%maxThreads].start();
+				lookups[i].start();
 				
 				//update swing gui
 				GUIUpdate();
 			}
+			System.out.println("read: "+read);
+			for(int j=0;j<maxThreads;j++){
+				waitForResult(j);
+			}
 			//close input file
 			if(!isDB)
 				br.close();
-			for(;i<read;i++){
-				if(lookups[i%maxThreads]==null){
-						System.out.println("Line: "+(i+1)+" not a correct format");
-				}else{
-					waitForResult(i);
-				}
-			}
 		}catch(FileNotFoundException e){
 			System.out.println("\nFile didn't exist");
 		}catch(IOException e){
