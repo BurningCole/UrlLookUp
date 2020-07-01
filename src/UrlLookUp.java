@@ -25,10 +25,6 @@ public class UrlLookUp implements IUpdateChecker{
 	private String[] names = new String[maxThreads];
 	private int[] actualIDs= new int[maxThreads];
 	
-	private StringBuilder current;
-	private StringBuilder total;
-	private int finished=0;
-	
 	/**
 	* FileName: name of file that contains urls
 	* Accept: what string marks link
@@ -130,6 +126,7 @@ public class UrlLookUp implements IUpdateChecker{
 			if(id>=maxThreads){
 				try{
 					Thread.sleep(250);
+					GUIUpdate();
 				}catch(InterruptedException e){
 					
 				}
@@ -137,7 +134,6 @@ public class UrlLookUp implements IUpdateChecker{
 			}
 		}
 		addResult(id);
-		GUIUpdate();
 		return id;
 	}
 	
@@ -168,16 +164,10 @@ public class UrlLookUp implements IUpdateChecker{
 	*/
 	public void startScan(){
 		System.out.println("\n--START SCAN---");
-		//create editable string for loading bars
-		current=new StringBuilder("[");
-		for(int i=0;i<maxThreads;i++)
-			current.append("=");
-		current.append("]");
-		total=new StringBuilder(current);
 		
 		//set up swing fields
-		text1=new JLabel(current.toString());
-		text2=new JLabel(total.toString());
+		text1=new JLabel(String.format("[%0"+maxThreads+"d]",0).replace("0","="));
+		text2=new JLabel(String.format("[%0"+maxThreads+"d]",0).replace("0","="));
 		JFrame frame= new JFrame("Output");
 		frame.setSize(maxThreads*7+16,70);
 		frame.setResizable(false);
@@ -270,21 +260,25 @@ public class UrlLookUp implements IUpdateChecker{
 	
 	// update GUI
 	private void GUIUpdate(){
+		String current="[";
+		String total="[";
+		int finished=0;
 		for(int j=0;j<maxThreads;j++){
-			if(lookups[j]==null||!lookups[j].isAlive())
-				if(current.charAt(j+1)=='#'){
-					total.setCharAt(finished--,'=');
-					current.setCharAt(j+1,'=');
-				}
-			else{
-				if(current.charAt(j+1)=='='){
-					total.setCharAt(++finished,'#');
-					current.setCharAt(j+1,'#');
-				}
+			if(lookups[j]==null||!lookups[j].isAlive()){
+				current=current+"=";
+			}else{
+				current=current+"#";
+				finished++;
 			}
 		}
-		text1.setText(current.toString());
-		text2.setText(total.toString());
+		current=current+"]";
+		if(finished!=0) total=total+
+			String.format("%0"+finished+"d",0).replace("0","#");
+		if(finished!=maxThreads) total=total+
+			String.format("%0"+(maxThreads-finished)+"d",0).replace("0","=");
+		total=total+"]";
+		text1.setText(current);
+		text2.setText(total);
 	}
 	
 	/**
