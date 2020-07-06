@@ -261,6 +261,7 @@ public class UpdateGUI{
 		}
 		segment.prefWidthProperty().bind(resultPane.widthProperty());
 		resultPane.getChildren().add(segment);
+		resultPane.prefHeightProperty().bind(segment.heightProperty().add(segment.layoutYProperty()));
 		return block;
 	}
 	
@@ -433,8 +434,21 @@ public class UpdateGUI{
 			int urls=0;
 			Button link=null;
 			
+			
+			String title;
+			switch(curOrder%OrderTypes.DESC){
+				case OrderTypes.URL:
+					title=newSite.getUrl();
+					break;
+				case OrderTypes.ID:
+					title=newSite.id+": "+newSite.getAlias();
+				default:
+					title=newSite.getAlias();
+					break;
+			}
+			
 			//set up pane seperation
-			TitledPane segment=new TitledPane(newSite.getAlias(),segPane);
+			TitledPane segment=new TitledPane(title,segPane);
 			segment.setTextFill(Color.MIDNIGHTBLUE);
 			if(prevWebsite==null){
 				segment.layoutYProperty().bind(internalPane.layoutYProperty());
