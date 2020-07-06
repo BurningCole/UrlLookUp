@@ -113,28 +113,42 @@ public class ScanGUI{
 						primaryStage.setScene(oldScene);
 					}
 				});
-				backBtn.layoutXProperty().bind(primaryStage.widthProperty().multiply(2).divide(3).subtract(backBtn.widthProperty().divide(2)));//button offset to middle and then shifted by half the width
+				backBtn.layoutXProperty().bind(primaryStage.widthProperty().multiply(3).divide(4).subtract(backBtn.widthProperty().divide(2)));//button offset to middle and then shifted by half the width
 				backBtn.layoutYProperty().bind(backBtn.heightProperty().add(prevPane.heightProperty().add(prevPane.layoutYProperty())));//the multiply adds the extra vertical offset and the divide is the divide gets it to the right size
 				
 				//run sql & reload button
-				Button FinishedBtn =new Button("mark+refresh");
-				FinishedBtn.setOnAction(HandleRescan);
-				FinishedBtn.layoutXProperty().bind(primaryStage.widthProperty().divide(3).subtract(FinishedBtn.widthProperty().divide(2)));//button offset to middle and then shifted by half the width
-				FinishedBtn.layoutYProperty().bind(backBtn.layoutYProperty());//the multiply adds the extra vertical offset and the divide is the divide gets it to the right size
+				Button reloadBtn =new Button("mark+refresh");
+				reloadBtn.setOnAction(new EventHandler<ActionEvent>() { 
+					public void handle(ActionEvent e){ 
+						//reload scene
+						HandleMarking();
+						HandleScan();
+					}
+				});
+				reloadBtn.layoutXProperty().bind(primaryStage.widthProperty().divide(4).subtract(reloadBtn.widthProperty().divide(2)));//button offset to middle and then shifted by half the width
+				reloadBtn.layoutYProperty().bind(backBtn.layoutYProperty());//the multiply adds the extra vertical offset and the divide is the divide gets it to the right size
 				
-				internalPane.getChildren().addAll(backBtn,FinishedBtn);
+				Button finishedBtn =new Button("mark+back");
+				finishedBtn.setOnAction(new EventHandler<ActionEvent>() { 
+					public void handle(ActionEvent e){ 
+						//reload scene
+						HandleMarking();
+						primaryStage.setScene(oldScene);
+					}
+				});
+				finishedBtn.layoutXProperty().bind(primaryStage.widthProperty().divide(2).subtract(finishedBtn.widthProperty().divide(2)));//button offset to middle and then shifted by half the width
+				finishedBtn.layoutYProperty().bind(backBtn.layoutYProperty());//the multiply adds the extra vertical offset and the divide is the divide gets it to the right size
+				
+				
+				internalPane.getChildren().addAll(backBtn,finishedBtn,reloadBtn);
 				internalPane.prefHeightProperty().bind(backBtn.heightProperty().multiply(2).add(backBtn.layoutYProperty()));
 				//internalPane.setWidth(sPane.getWidth());
-				internalPane.prefWidthProperty().bind(sPane.widthProperty());
 			}
 		});
 		new Thread(scan).start();
 	}
 	
-	private EventHandler<ActionEvent> HandleRescan = new EventHandler<ActionEvent>(){
-		@Override
-		public void handle(ActionEvent e)
-		{ 
+	private void HandleMarking(){
 			//calculate sql and run
 			DbBasic dataBase = GUI.getDataBase();
 			for(int i=0;i<updates.size();i++){
@@ -188,11 +202,7 @@ public class ScanGUI{
 				}
 			}
 			dataBase.close();
-			
-			//reload scene
-			HandleScan();
 		}
-	};
 
 	private class ScanStruct{
 		TitledPane pane;

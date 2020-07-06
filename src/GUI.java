@@ -30,7 +30,7 @@ public class GUI extends Application {
 		Button scanBtn = new Button("Scan urls");//scan button
 		scanBtn.setDefaultButton(true);
 		Button addBtn = new Button("Add new urls");//goes to add menu
-		Button removeBtn = new Button("Remove urls");
+		Button removeBtn = new Button("Remove/Update urls");
 		Button quitBtn =new Button("quit");
 		
 		//put in array for quick altering of values
