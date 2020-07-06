@@ -9,6 +9,7 @@ import javafx.event.EventHandler;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
@@ -27,9 +28,11 @@ import java.text.SimpleDateFormat;
 public class UpdateGUI{
 	int values=0;
 	ArrayList<WebsiteVal> results = new ArrayList<WebsiteVal>();
+	ArrayList<Region> toDraw = new ArrayList<Region>();
 	Stage primaryStage;
 	Scene oldScene;
 	ScrollPane sPane = new ScrollPane();
+	Pane resultPane=new Pane();
 	
 	public UpdateGUI(Stage primaryStage){
 		this.primaryStage=primaryStage;
@@ -51,42 +54,71 @@ public class UpdateGUI{
 		public final static String[] orderStrings = {"updated","urls.id","urls.alias","url"};
 	}
 	
+	int curOrder=OrderTypes.UPDATED+OrderTypes.ASC;
+	
 	//Do default scan and load to sPane
 	public void HandleScan(){
-		HandleScan(OrderTypes.UPDATED+OrderTypes.ASC);
+		HandleScan(curOrder);
 	}
 	
 	public void HandleScan(int order){
-		//final Integer values=0;
-		String orderStr=OrderTypes.orderStrings[order%OrderTypes.DESC];
-		if(order>=OrderTypes.DESC){
-			orderStr=orderStr+" DESC";
-		}else{
-			orderStr=orderStr+" ASC";
-		}
-		
-		DbBasic db = GUI.getDataBase();
 		
 		Pane internalPane=new Pane();
 		sPane.setContent(internalPane);
 		
 		internalPane.prefWidthProperty().bind(sPane.widthProperty());
 		
-		//create lookup
-		results.clear();
+		Label sortBy=new Label("Sort By:");
 		
-		ResultSet rs=db.doQuery("SELECT urls.id, websites.webId, websites.url || urls.url AS url, urls.alias FROM urls INNER JOIN websites ON urls.webId=websites.webId ORDER BY "+orderStr);
+		ComboBox sortBox = new ComboBox();
+		ComboBox orderBox = new ComboBox();
 		
-		WebsiteVal prevWebsite=null;
-		try{
-			while(rs.next()){
-				prevWebsite=addScanResult(rs,prevWebsite,internalPane);
-			}
-		}catch(SQLException e){
-			GUI.getLogger().severe("error loading values");
-		}
-		db.close();
-				
+		sortBox.getItems().addAll(
+			"Updated",
+			"ID",
+			"Name/Alias",
+			"URL"
+		);
+		orderBox.getItems().addAll(
+			"Ascending",
+			"Decending"
+		);
+		
+		sortBox.getSelectionModel().selectFirst();
+		orderBox.getSelectionModel().selectFirst();
+		
+		sortBox.valueProperty().addListener(new ChangeListener<String>() {
+			@Override public void changed(ObservableValue ov, String oldVal, String newVal) {
+				curOrder-=sortBox.getItems().indexOf(oldVal);
+				curOrder+=sortBox.getItems().indexOf(newVal);
+				System.out.println(sortBox.getItems().indexOf(newVal));
+				System.out.println(sortBox.getItems().indexOf(oldVal));
+				loadResults(curOrder);
+		}});
+		orderBox.valueProperty().addListener(new ChangeListener<String>() {
+			@Override public void changed(ObservableValue ov, String oldVal, String newVal) {
+				curOrder-=orderBox.getItems().indexOf(oldVal)*OrderTypes.DESC;
+				curOrder+=orderBox.getItems().indexOf(newVal)*OrderTypes.DESC;
+				System.out.println(orderBox.getItems().indexOf(newVal));
+				System.out.println(orderBox.getItems().indexOf(oldVal));
+				System.out.println(curOrder);
+				loadResults(curOrder);
+		}});
+
+		sortBy.layoutYProperty().bind(internalPane.layoutYProperty().add(sortBox.heightProperty()));
+		sortBy.layoutXProperty().bind(internalPane.layoutYProperty().add(sortBox.heightProperty()));
+		
+		sortBox.layoutYProperty().bind(sortBy.layoutYProperty());
+		sortBox.layoutXProperty().bind(sortBy.layoutXProperty().multiply(2).add(sortBy.widthProperty()));
+		
+		orderBox.layoutYProperty().bind(sortBy.layoutYProperty());
+		orderBox.layoutXProperty().bind(sortBox.layoutXProperty().add(sortBox.widthProperty()));
+		
+		loadResults(order);
+		
+		resultPane.layoutYProperty().bind(sortBox.layoutYProperty().add(sortBox.heightProperty()));
+		resultPane.prefWidthProperty().bind(internalPane.widthProperty());
+			
 		//back button
 		Button backBtn =new Button("Back");
 		backBtn.setOnAction(new EventHandler<ActionEvent>() { 
@@ -96,7 +128,7 @@ public class UpdateGUI{
 			}
 		});
 		backBtn.layoutXProperty().bind(primaryStage.widthProperty().multiply(2).divide(3).subtract(backBtn.widthProperty().divide(2)));//button offset to middle and then shifted by half the width
-		backBtn.layoutYProperty().bind(backBtn.heightProperty().add(prevWebsite.pane.heightProperty().add(prevWebsite.pane.layoutYProperty())));//the multiply adds the extra vertical offset and the divide is the divide gets it to the right size
+		backBtn.layoutYProperty().bind(resultPane.heightProperty().add(resultPane.layoutYProperty()).add(backBtn.heightProperty()));//the multiply adds the extra vertical offset and the divide is the divide gets it to the right size
 		
 		//run sql & reload button
 		Button FinishedBtn =new Button("reload");
@@ -104,10 +136,132 @@ public class UpdateGUI{
 		FinishedBtn.layoutXProperty().bind(primaryStage.widthProperty().divide(3).subtract(FinishedBtn.widthProperty().divide(2)));//button offset to middle and then shifted by half the width
 		FinishedBtn.layoutYProperty().bind(backBtn.layoutYProperty());//the multiply adds the extra vertical offset and the divide is the divide gets it to the right size
 		
-		internalPane.getChildren().addAll(backBtn,FinishedBtn);
 		internalPane.prefHeightProperty().bind(backBtn.heightProperty().multiply(2).add(backBtn.layoutYProperty()));
 		//internalPane.setWidth(sPane.getWidth());
 		internalPane.prefWidthProperty().bind(sPane.widthProperty());
+		internalPane.getChildren().addAll(sortBy,sortBox,orderBox,resultPane,backBtn,FinishedBtn);
+		
+		/*Task<Void> scan = new Task<Void>(){
+			@Override 
+			public Void call() throws InterruptedException {
+				GUI.logInfo("Scan Started");
+				loadResults(order);
+				GUI.logInfo("Scan Finished");
+				return null;
+			}
+		};
+		
+		
+		scan.setOnSucceeded(new EventHandler<WorkerStateEvent>() {
+			@Override
+			public void handle(WorkerStateEvent t)
+			{
+				for(int i=0;i<toDraw.size();i++){
+					if(i==0){
+						toDraw.get(i).layoutYProperty().bind(resultPane.layoutYProperty());
+					}else{
+						toDraw.get(i).layoutYProperty().bind(toDraw.get(i-1).layoutYProperty().add(toDraw.get(i-1).heightProperty()));
+					}
+					toDraw.get(i).prefWidthProperty().bind(resultPane.widthProperty());
+					resultPane.getChildren().add(toDraw.get(i));
+					
+				}
+				
+				//Region firstpane=toDraw.get(0);
+				//Region lastpane=toDraw.get(toDraw.size()-1);
+				System.out.println(resultPane.heightProperty().getValue());
+				System.out.println(resultPane.getLayoutY());
+			}
+		});
+		new Thread(scan).start();*/
+		
+	}
+	
+	private void loadResults(int order){
+		//create lookup
+		results.clear();
+		toDraw.clear();
+		
+		resultPane.getChildren().clear();
+		
+		
+		DbBasic db = GUI.getDataBase();
+		
+		//final Integer values=0;
+		String orderStr=OrderTypes.orderStrings[order%OrderTypes.DESC];
+		if(order>=OrderTypes.DESC){
+			orderStr=orderStr+" DESC";
+		}else{
+			orderStr=orderStr+" ASC";
+		}
+		
+		ResultSet rs=db.doQuery("SELECT urls.id, websites.webId, websites.url || urls.url AS url, urls.alias, urls.updated FROM urls INNER JOIN websites ON urls.webId=websites.webId ORDER BY "+orderStr);
+		System.out.println("SELECT urls.id, websites.webId, websites.url || urls.url AS url, urls.alias, urls.updated FROM urls INNER JOIN websites ON urls.webId=websites.webId ORDER BY "+orderStr);
+		WebsiteVal prevWebsite=null;
+		String curBlock="----------------";
+		Pane block=new Pane();
+		try{
+			while(rs.next()){
+				switch(order%OrderTypes.DESC){
+					case OrderTypes.UPDATED:
+						if(rs.getString(5)==null&&!curBlock.equals("UNKNOWN")){
+							curBlock="UNKNOWN";
+							block=createBlock(curBlock);
+							prevWebsite=null;
+						}else
+						if(rs.getString(5)!=null&&!curBlock.equals(rs.getString(5))){
+							curBlock=rs.getString(5);
+							block=createBlock(curBlock);
+							prevWebsite=null;
+						}
+						break;
+					case OrderTypes.ID:
+						if(!((rs.getInt(1)/100)+"XX").equals(curBlock)){
+							curBlock=(rs.getInt(1)/100)+"XX";
+							block=createBlock(curBlock);
+							prevWebsite=null;
+						}
+						break;
+					case OrderTypes.NAME:
+						if(!rs.getString(4).startsWith(curBlock)){
+							curBlock=rs.getString(4).substring(0,1);
+							block=createBlock(curBlock);
+							prevWebsite=null;
+						}
+						break;
+					case OrderTypes.URL:
+						if(!rs.getString(3).startsWith(curBlock)){
+							String[] split=rs.getString(3).split("/");
+							curBlock=split[0]+"//"+split[2];
+							block=block=createBlock(curBlock);
+							prevWebsite=null;
+						}
+						break;
+				}
+				prevWebsite=addScanResult(rs,prevWebsite,block);
+			}
+		}catch(SQLException e){
+			GUI.getLogger().severe("error loading values");
+		}
+		db.close();
+
+	}
+	
+	private Pane createBlock(String curBlock){
+		Pane block=new Pane();
+		TitledPane segment=new TitledPane(curBlock,block);
+		int size=toDraw.size();
+		toDraw.add(segment);
+		segment.setExpanded(false);
+		
+		if(size==0){
+			segment.layoutYProperty().bind(resultPane.layoutYProperty());
+		}else{
+			segment.layoutYProperty().bind(toDraw.get(size-1).layoutYProperty().add(toDraw.get(size-1).heightProperty()));
+		}
+		segment.prefWidthProperty().bind(resultPane.widthProperty());
+		resultPane.getChildren().add(segment);
+		return block;
 	}
 	
 	private EventHandler<ActionEvent> HandleRescan = new EventHandler<ActionEvent>(){
@@ -300,7 +454,6 @@ public class UpdateGUI{
 			url.layoutYProperty().bind(aliasEditField.layoutYProperty().add(aliasEditField.heightProperty().multiply(3).divide(2)));
 			urlEditField.layoutYProperty().bind(url.layoutYProperty().add(url.heightProperty()));
 			
-			
 			//Update button
 			Button UpdateBtn =new Button("Update");
 			UpdateBtn.setOnAction(new EventHandler<ActionEvent>() { 
@@ -346,8 +499,6 @@ public class UpdateGUI{
 			RemoveBtn.layoutYProperty().bind(UpdateBtn.layoutYProperty());//the multiply adds the extra vertical offset and the divide is the divide gets it to the right size
 			RemoveBtn.prefWidthProperty().bind(UpdateBtn.widthProperty());
 			
-			
-			
 			//alias edit
 			aliasEditField.textProperty().addListener(new ChangeListener<String>() {
 				@Override
@@ -367,11 +518,13 @@ public class UpdateGUI{
 					UpdateBtn.setDisable(false);
 				}
 			});
+			
 			segPane.getChildren().add(url);
 			segPane.getChildren().add(urlEditField);
 			
-			segment.prefWidthProperty().bind(internalPane.widthProperty());
-			segment.maxWidthProperty().bind(internalPane.widthProperty());
+			segment.prefWidthProperty().bind(internalPane.widthProperty().multiply(9).divide(10));
+			segment.maxWidthProperty().bind(internalPane.widthProperty().multiply(9).divide(10));
+			segment.layoutXProperty().bind(internalPane.widthProperty().subtract(segment.widthProperty()).divide(3));
 			
 			segPane.prefWidthProperty().bind(segment.widthProperty());
 			segPane.maxWidthProperty().bind(segment.widthProperty());
@@ -382,13 +535,17 @@ public class UpdateGUI{
 			
 			segPane.prefHeightProperty().bind(RemoveBtn.layoutYProperty().add(RemoveBtn.heightProperty().multiply(3).divide(2)));
 			
-			results.add(newSite);
+			internalPane.getChildren().add(segment);
+			internalPane.prefHeightProperty().bind(segment.layoutYProperty().add(segment.heightProperty().subtract(internalPane.layoutYProperty())));
 			
-			internalPane.getChildren().addAll(segment);
+			results.add(newSite);
 			
 			return newSite;
 		}catch(SQLException e){
 			GUI.getLogger().severe("website values corrupted");
+			return prevWebsite;
+		}catch(Exception e){
+			e.printStackTrace();
 			return prevWebsite;
 		}
 	}
