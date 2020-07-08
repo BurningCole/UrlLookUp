@@ -140,7 +140,7 @@ public class GUI extends Application {
 			return logger;
 		try{
 			logger = Logger.getLogger("Primary");
-			fh = new FileHandler(getDataFileLoc()+"logFile.log");  
+			fh = new FileHandler(getDataFileLoc()+"logFile.log",10000,5,true);  
 			fh.setFormatter(new SimpleFormatter());		
 			logger.addHandler(fh);
 		}catch(Exception e){
