@@ -79,7 +79,6 @@ public class AddGUI{
 			String sql = "INSERT INTO urls(alias,webId,url,updated) VALUES (\"<Alias>\",<WebId>,\"<Url>\",\"<Date>\");";
 			DbBasic dataBase = GUI.getDataBase();
 			String url=urlEditField.getText();
-			GUI.logInfo("Adding url: "+url);
 			String usedUrl="";
 			int webId=0;
 			ResultSet rs=dataBase.doQuery("SELECT url,webId FROM websites");
@@ -106,12 +105,14 @@ public class AddGUI{
 					sql=sql.replace("<WebId>",String.valueOf(webId));
 					sql=sql.replace("<Url>",prepArg(usedUrl));
 					sql=sql.replace("<Date>",DATE_FORMAT.format(new Date()));
-					dataBase.runSQL(sql);
-					//System.out.println(sql);
-					urlEditField.setText("");
+					if(dataBase.runSQL(sql)){
+						urlEditField.setText("");
 					aliasEditField.setText("");
+					GUI.logInfo("Added url: "+url);
+					}
 				}
 			}catch(SQLException ex){
+				GUI.getLogger().warning("Failed to add url: "+url);
 				ex.printStackTrace();
 				return;
 			}

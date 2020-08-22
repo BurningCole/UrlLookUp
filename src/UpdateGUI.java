@@ -144,9 +144,9 @@ public class UpdateGUI{
 		/*Task<Void> scan = new Task<Void>(){
 			@Override 
 			public Void call() throws InterruptedException {
-				GUI.logInfo("Scan Started");
+				GUI.getLogger().info("Scan Started");
 				loadResults(order);
-				GUI.logInfo("Scan Finished");
+				GUI.getLogger().info("Scan Finished");
 				return null;
 			}
 		};

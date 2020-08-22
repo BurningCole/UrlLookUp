@@ -79,7 +79,7 @@ public class ScanGUI{
 		Task<Void> scan = new Task<Void>(){
 			@Override 
 			public Void call() throws InterruptedException {
-				GUI.logInfo("Scan Started");
+				GUI.getLogger().info("Scan Started");
 				lookup.startScan();
 				return null;
 			}
@@ -88,7 +88,7 @@ public class ScanGUI{
 			@Override
 			public void handle(WorkerStateEvent t)
 			{
-				GUI.logInfo("Scan Finished");
+				GUI.getLogger().info("Scan Finished");
 				db.close();
 				
 				if(!(updates instanceof ListExpression)){
@@ -103,7 +103,7 @@ public class ScanGUI{
 				if(updates.size()==0){
 					//tell user no updates found
 				}
-				GUI.logInfo("Found "+updates.size()+" updates/changes/errors");
+				GUI.getLogger().info("Found "+updates.size()+" updates/changes/errors");
 				
 				//back button
 				Button backBtn =new Button("Back");
@@ -154,7 +154,7 @@ public class ScanGUI{
 			for(int i=0;i<updates.size();i++){
 				if(results.get(i).getChecked()){//switch to if check checked
 					UrlUpdate update=results.get(i).getUpdate();
-					GUI.logInfo("Update: "+update.name());
+					//GUI.getLogger().info("Update: "+update.name());
 					switch(update.getType()){
 						case UrlUpdate.NORMAL:	//normal update
 							dataBase.runSQL(update.getSQLStatement());
@@ -175,7 +175,7 @@ public class ScanGUI{
 									}
 								}
 								if(website==-1){
-									GUI.logInfo("Unknown url: "+url);
+									GUI.getLogger().info("Unknown url: "+url);
 									//new hostAdder(primaryStage).HandleAddMenu(url);
 								}
 							}catch(SQLException ex){
@@ -195,7 +195,7 @@ public class ScanGUI{
 							}
 							break;
 						default:				//other unhandled update
-							GUI.logInfo("Unimplemented update type id: "+update.getType());
+							GUI.getLogger().info("Unimplemented update type id: "+update.getType());
 							GUI.getLogger().warning("Update failed "+update.getUrl());
 							break;
 					}

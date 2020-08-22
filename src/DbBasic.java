@@ -98,20 +98,28 @@ public class DbBasic {
 			Statement statement = con.createStatement();
 			rs=statement.executeQuery(query);
 		}catch(SQLException e){
+			notify( "Query ["
+					+ query
+					+ "] Unresolvable", e);
 			System.out.println("statement:\n"+query+"\nUnresolveable");
 			e.printStackTrace();
 		}
 		return rs;
 	}
 	
-	public void runSQL(String sql){
+	public boolean runSQL(String sql){
 		try{
 			Statement statement = con.createStatement();
 			statement.execute(sql);
+			return true;
 		}catch(SQLException e){
+			notify( "SQL ["
+					+ sql
+					+ "] Unresolvable", e);
 			System.out.println("SQL:\n"+sql+"\nUnresolveable");
 			e.printStackTrace();
 		}
+		return false;
 	}
 	
 	public void runScript(String script){

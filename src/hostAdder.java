@@ -84,7 +84,7 @@ public class hostAdder{
 			if(excludeEditField.getText().length()==0||acceptEditField.getText().length()==0||urlEditField.getText().length()==0)
 				return;//return if values not put in
 			//add
-			String sql = "INSERT INTO websites(accept,exclude,url) VALUES (\"<Accept>\",<Exclude>,\"<Url>\");";
+			String sql = "INSERT INTO websites(accept,exclude,url) VALUES (\"<Accept>\",\"<Exclude>\",\"<Url>\");";
 			DbBasic dataBase = GUI.getDataBase();
 			String url=urlEditField.getText();
 			String usedUrl="";
@@ -92,10 +92,12 @@ public class hostAdder{
 			sql=sql.replace("<Accept>",prepArg(acceptEditField.getText()));
 			sql=sql.replace("<Exclude>",prepArg(excludeEditField.getText()));
 			sql=sql.replace("<Url>",prepArg(urlEditField.getText()));
-			dataBase.runSQL(sql);
-			//System.out.println(sql);
+			
+			if(dataBase.runSQL(sql)){
+				GUI.getLogger().info("Website: "+url+" added");
+			}
 			dataBase.close();
-			GUI.logInfo("Website: "+url+" added");
+			primaryStage.setScene(oldScene);
 		}
 	};
 	
