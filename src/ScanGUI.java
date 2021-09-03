@@ -12,10 +12,15 @@ import javafx.scene.control.CheckBox;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TitledPane;
+import javafx.scene.control.Label;
+import javafx.scene.layout.Background;
+import javafx.scene.layout.BackgroundFill;
+import javafx.scene.layout.CornerRadii;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
+import javafx.geometry.Insets;
 
 import java.sql.*;
 import java.util.List;
@@ -149,69 +154,75 @@ public class ScanGUI{
 	}
 	
 	private void HandleMarking(){
-			//calculate sql and run
-			DbBasic dataBase = GUI.getDataBase();
-			for(int i=0;i<updates.size();i++){
-				if(results.get(i).getChecked()){//switch to if check checked
-					UrlUpdate update=results.get(i).getUpdate();
-					//GUI.getLogger().info("Update: "+update.name());
-					switch(update.getType()){
-						case UrlUpdate.NORMAL:	//normal update
-							dataBase.runSQL(update.getSQLStatement());
-							break;
-						case UrlUpdate.MISSING_EXCLUDE:
-							ResultSet rs=dataBase.doQuery("SELECT url,webId FROM websites");
-							String SQLUpdate=update.getSQLStatement();
-							int website=-1;
-							String url="";
-							try{
-								while(rs.next()){
-									if(update.getUrl().startsWith(rs.getString("url"))){
-										url=update.getUrl().substring(
-											rs.getString("url").length()
-										);
-										website=rs.getInt("webId");
-										break;
-									}
+		//calculate sql and run
+		DbBasic dataBase = GUI.getDataBase();
+		for(int i=0;i<updates.size();i++){
+			if(results.get(i).getChecked()){//switch to if check checked
+				UrlUpdate update=results.get(i).getUpdate();
+				//GUI.getLogger().info("Update: "+update.name());
+				switch(update.getType()){
+					case UrlUpdate.NORMAL:	//normal update
+						dataBase.runSQL(update.getSQLStatement());
+						break;
+					case UrlUpdate.MISSING_EXCLUDE:
+						ResultSet rs=dataBase.doQuery("SELECT url,webId FROM websites");
+						String SQLUpdate=update.getSQLStatement();
+						int website=-1;
+						String url="";
+						try{
+							while(rs.next()){
+								if(update.getUrl().startsWith(rs.getString("url"))){
+									url=update.getUrl().substring(
+										rs.getString("url").length()
+									);
+									website=rs.getInt("webId");
+									break;
 								}
-								if(website==-1){
-									GUI.getLogger().info("Unknown url: "+url);
-									//new hostAdder(primaryStage).HandleAddMenu(url);
-								}
-							}catch(SQLException ex){
-								ex.printStackTrace();
-								GUI.getLogger().warning("SQL error on "+url+"SELECT url,webId FROM websites");
 							}
+							if(website==-1){
+								GUI.getLogger().info("Unknown url: "+url);
+								//new hostAdder(primaryStage).HandleAddMenu(url);
+							}
+						}catch(SQLException ex){
+							ex.printStackTrace();
+							GUI.getLogger().warning("SQL error on "+url+"SELECT url,webId FROM websites");
+						}
+						
+						if(website!=-1){
+							String change="webId = "+website+",URL = '"+url+"' ";
+							SQLUpdate = SQLUpdate.replace("^",change);
+							dataBase.runSQL(
+								SQLUpdate
+							);
 							
-							if(website!=-1){
-								String change="webId = "+website+",URL = '"+url+"' ";
-								SQLUpdate = SQLUpdate.replace("^",change);
-								dataBase.runSQL(
-									SQLUpdate
-								);
-								
-							}else{
-								GUI.getLogger().warning("Update failed "+update.getUrl());
-							}
-							break;
-						default:				//other unhandled update
-							GUI.getLogger().info("Unimplemented update type id: "+update.getType());
+						}else{
 							GUI.getLogger().warning("Update failed "+update.getUrl());
-							break;
-					}
+						}
+						break;
+					default:				//other unhandled update
+						GUI.getLogger().info("Unimplemented update type id: "+update.getType());
+						GUI.getLogger().warning("Update failed "+update.getUrl());
+						break;
 				}
+			}else if(results.get(i).getDeleteChecked()){
+				UrlUpdate update = results.get(i).getUpdate();
+				dataBase.runSQL(update.getDeleteStatement());
+				GUI.getLogger().info("Deleted: "+update.name()+" : "+update.getUrl());
 			}
-			dataBase.close();
 		}
+		dataBase.close();
+	}
 
 	private class ScanStruct{
 		TitledPane pane;
 		CheckBox checkbox;
+		CheckBox deleteBox;
 		UrlUpdate update;
 		
-		public ScanStruct(TitledPane p,CheckBox c, UrlUpdate u){
+		public ScanStruct(TitledPane p,CheckBox c, CheckBox d, UrlUpdate u){
 			pane=p;
 			checkbox=c;
+			deleteBox=d;
 			update=u;
 		}
 		public TitledPane getTitledPane(){
@@ -220,9 +231,38 @@ public class ScanGUI{
 		public boolean getChecked(){
 			return checkbox.isSelected();
 		}
+		public boolean getDeleteChecked(){
+			return deleteBox.isSelected();
+		}
 		public UrlUpdate getUpdate(){
 			return update;
 		}
+	}
+	
+	private Button generateButton(String website,Pane container,int index){
+		Button link = new Button(website);
+		link.prefWidthProperty().bind(container.widthProperty());
+		link.maxWidthProperty().bind(container.widthProperty());
+		link.layoutYProperty().bind(link.heightProperty().multiply(index));
+		link.setOnAction(new EventHandler<ActionEvent>() { 
+			public void handle(ActionEvent e)
+			{ 
+				String finalWebsite="Unknown";
+				try{
+					if(!(website.startsWith("http")||website.startsWith("Http"))){
+						finalWebsite="http://"+website;
+					}else{
+						finalWebsite=website;
+					}
+				java.awt.Desktop.getDesktop().browse(new java.net.URI(finalWebsite));
+				}catch(Exception ex){
+					System.out.println("Error");
+					GUI.getLogger().warning("website \""+finalWebsite+"\" conection error");
+				}
+			}
+		});
+		container.getChildren().add(link);
+		return link;
 	}
 	
 	private TitledPane addScanResult(UrlUpdate curUpdate,Pane internalPane, Region prevPane,List results){
@@ -232,44 +272,37 @@ public class ScanGUI{
 		
 		//name,url links, check/
 		int urls=0;
-		Button link=null;
 		
 		Color segColour=Color.RED;
-		if(curUpdate.urls()!=null&&curUpdate.getType()==UrlUpdate.NORMAL){
+		Button link = null;
+		if(curUpdate.urls()!=null&&curUpdate.getType()==UrlUpdate.NORMAL){		
+			segColour=Color.MIDNIGHTBLUE;
 			for(String website:curUpdate.urls()){
-				segColour=Color.MIDNIGHTBLUE;
-				//add single url part
-				link = new Button(website);
-				link.prefWidthProperty().bind(segPane.widthProperty());
-				link.maxWidthProperty().bind(segPane.widthProperty());
-				link.layoutYProperty().bind(link.heightProperty().multiply(urls));
-				link.setOnAction(new EventHandler<ActionEvent>() { 
-					public void handle(ActionEvent e)
-					{ 
-						String finalWebsite="Unknown";
-						try{
-							if(!(website.startsWith("http")||website.startsWith("Http"))){
-								finalWebsite="http://"+website;
-							}else{
-								finalWebsite=website;
-							}
-						java.awt.Desktop.getDesktop().browse(new java.net.URI(finalWebsite));
-						}catch(Exception ex){
-							System.out.println("Error");
-							GUI.getLogger().warning("website \""+finalWebsite+"\" conection error");
-						}
-					}
-				});
+				link = generateButton(website,segPane,urls);
 				urls++;
-				segPane.getChildren().add(link);
 			}
 			if(link!=null)
-			segPane.prefHeightProperty().bind(link.heightProperty().multiply(urls));
-		}else if(curUpdate.getType()==UrlUpdate.MISSING_EXCLUDE){
+				segPane.prefHeightProperty().bind(link.heightProperty().multiply(urls));
+		}else{
+			String errorUrl = curUpdate.getUrl();
+			List<String> correctUrls = curUpdate.urls();
+			correctUrls.remove(errorUrl);
+			for(String website:correctUrls){
+				link = generateButton(website,segPane,urls);
+				urls++;
+			}
+			Label issue = new Label(curUpdate.getError());
+			issue.prefWidthProperty().bind(segPane.widthProperty());
+			issue.maxWidthProperty().bind(segPane.widthProperty());
+			if(link!=null){
+				issue.layoutYProperty().bind(link.heightProperty().multiply(urls));
+			}
 			segColour=Color.CRIMSON;
-			TextField urlEditField = new TextField(curUpdate.getUrl());
+			TextField urlEditField = new TextField(errorUrl);
 			urlEditField.prefWidthProperty().bind(segPane.widthProperty());
 			urlEditField.maxWidthProperty().bind(segPane.widthProperty());
+			urlEditField.layoutYProperty().bind(issue.heightProperty().add(issue.layoutYProperty()));
+			
 			urlEditField.textProperty().addListener(new ChangeListener<String>() {
 				@Override
 				public void changed(final ObservableValue<? extends String> observable, final String oldValue, final String newValue) {
@@ -277,8 +310,9 @@ public class ScanGUI{
 				}
 			});
 			
+			segPane.getChildren().add(issue);
 			segPane.getChildren().add(urlEditField);
-			segPane.prefHeightProperty().bind(urlEditField.heightProperty());
+			segPane.prefHeightProperty().bind(urlEditField.heightProperty().add(urlEditField.layoutYProperty()));
 		}
 		TitledPane segment=new TitledPane(curUpdate.name(),segPane);
 		segment.setTextFill(segColour);
@@ -287,19 +321,25 @@ public class ScanGUI{
 		prevPane=segment;
 		
 		CheckBox check = new CheckBox();
+		CheckBox delete = new CheckBox();
 		
-		segment.prefWidthProperty().bind(internalPane.widthProperty().subtract(check.widthProperty().multiply(2)));// 7/8 width
-		segment.maxWidthProperty().bind(internalPane.widthProperty().subtract(check.widthProperty().multiply(2)));// 7/8 width
+		delete.setBackground(new Background(new BackgroundFill(Color.CRIMSON,CornerRadii.EMPTY,Insets.EMPTY)));
+		
+		segment.prefWidthProperty().bind(internalPane.widthProperty().subtract(check.widthProperty().multiply(3)));// 7/8 width
+		segment.maxWidthProperty().bind(internalPane.widthProperty().subtract(check.widthProperty().multiply(3)));// 7/8 width
 		
 		segPane.prefWidthProperty().bind(segment.widthProperty());
 		segPane.maxWidthProperty().bind(segment.widthProperty());
 		
 		check.layoutYProperty().bind(segment.layoutYProperty().add(segment.heightProperty().subtract(check.heightProperty()).divide(2)));
-		check.layoutXProperty().bind(internalPane.widthProperty().subtract(check.widthProperty().multiply(7).divide(4)));
+		check.layoutXProperty().bind(internalPane.widthProperty().subtract(check.widthProperty().multiply(3)));
 		
-		results.add(new ScanStruct(segment,check,curUpdate));
+		delete.layoutYProperty().bind(segment.layoutYProperty().add(segment.heightProperty().subtract(delete.heightProperty()).divide(2)));
+		delete.layoutXProperty().bind(internalPane.widthProperty().subtract(delete.widthProperty().multiply(7).divide(4)));
 		
-		internalPane.getChildren().addAll(segment,check);
+		results.add(new ScanStruct(segment,check,delete,curUpdate));
+		
+		internalPane.getChildren().addAll(segment,check,delete);
 		return segment;
 	}
 }

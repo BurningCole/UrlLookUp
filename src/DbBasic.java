@@ -107,6 +107,7 @@ public class DbBasic {
 		return rs;
 	}
 	
+	//run sql, will reurn whether sql succeded 
 	public boolean runSQL(String sql){
 		try{
 			Statement statement = con.createStatement();

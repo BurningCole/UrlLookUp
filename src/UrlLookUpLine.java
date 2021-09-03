@@ -145,7 +145,7 @@ public class UrlLookUpLine implements Runnable{
 				return;
 			}
 			System.out.println("Error accsessing:\n"+url);
-			urlMem.add("Error: "+url+" website connection error (sock timeout)...\n");
+			urlMem.add(url);
 			hasUpdate=-2;
 			e.printStackTrace();
 		}catch(IOException e){
@@ -156,7 +156,7 @@ public class UrlLookUpLine implements Runnable{
 				return;
 			}
 			System.out.println("Error accsessing:\n"+url);
-			urlMem.add("Error: "+url+" IO error...(possibly 404 response)\n");
+			urlMem.add(url);
 			hasUpdate=-1;
 		}
 	}
