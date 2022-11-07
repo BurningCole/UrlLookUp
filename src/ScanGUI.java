@@ -287,7 +287,7 @@ public class ScanGUI{
 			String errorUrl = curUpdate.getUrl();
 			List<String> correctUrls = curUpdate.urls();
 			correctUrls.remove(errorUrl);
-			for(String website:correctUrls){
+			for(String website : correctUrls){
 				link = generateButton(website,segPane,urls);
 				urls++;
 			}

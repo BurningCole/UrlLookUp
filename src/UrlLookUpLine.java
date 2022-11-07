@@ -92,6 +92,7 @@ public class UrlLookUpLine implements Runnable{
 			URL website = new URL(url);
 			HttpURLConnection con = (HttpURLConnection) website.openConnection();
 			con.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.181 Safari/537.36");
+			con.setReadTimeout(10000);
 			
 			//read http file that is returned
 			BufferedReader reader = new BufferedReader(new InputStreamReader(con.getInputStream()));

@@ -1,4 +1,4 @@
 Manifest-Version: 1.0   
-Class-Path: ../dependants/sqlite-jdbc-3.7.2.jar                                                                                                                                                                       
+Class-Path: ../dependants/sqlite-jdbc-3.7.2.jar ../javafx-sdk-18.0.1/lib/                                                                                                                    
 Main-Class: Main
 Class-Path: 
